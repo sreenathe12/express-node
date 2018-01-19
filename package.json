@@ -1,0 +1,21 @@
+{
+  "name": "uipage",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^1.14.3",
+    "body-parser": "~1.13.2",
+    "cookie-parser": "~1.3.5",
+    "debug": "~2.2.0",
+    "express": "~4.13.1",
+    "express-favicon-short-circuit": "^1.1.0",
+    "morgan": "~1.6.1",
+    "ejs": "~2.5.2",
+    "serve-favicon": "~2.3.0"
+  }
+}
