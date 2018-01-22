@@ -6,9 +6,8 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
-router.get('/TranscendController',function(req,res){
-
-  res.render('monitor');
+router.post('/TranscendController',function(req,res){
+    res.render('monitor');
 });
 
 module.exports = router;
