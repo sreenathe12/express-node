@@ -1,0 +1,1306 @@
+
+/*******************************************************************************
+  Transcend Application Source File
+
+  Company:
+    Molex, LLC
+  Summary:
+    This file contains the source code for the main application stylesheet.
+
+  COPYRIGHT (C) 2016 Molex - All Rights Reserved
+
+*******************************************************************************/
+
+@import url(userlightscenes.css);
+@import url(activations.css);
+@import url(mood.css);
+@import url(orientation.css);
+
+input:disabled {
+  cursor: not-allowed;
+}
+html, body {
+  cursor: default;
+  /*max-height: 100%;*/
+  margin: 0;
+  /*max-width: 100%;*/
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-app-region: drag;
+}
+
+body *{
+  font-family: "Verdana", "Arial", "sans-serif";
+  font-size: 14px;
+}
+
+.smartDrag-checkBox {
+  display : none
+}
+
+/* #plus-1{
+  display : none
+} */
+
+input#inputSearchValueBox {
+
+  /*margin-left: 100px;*/
+  border-radius: 7px !important;
+}
+
+.smartDrag-checkBox {
+  text-align: center;
+  margin-top: 2px;
+  font-size: 50px;
+  font-weight: 700;
+}
+
+hr{
+  width: 95%;
+}
+
+
+.inputSearchBox {
+  padding: 10px;
+}
+
+img#searchIcon {
+  position: absolute;
+  margin-top: 3px;
+  margin-left: 3px;
+}
+
+
+
+div#fixtures {
+  margin-top: 15px;
+}
+
+input:focus{
+  outline: none;
+}
+
+/* NOTE-MAK: feature: blow-up-tabs */
+#canvas-container{
+  /*border: 2px solid green;*/
+  bottom: 20px;
+  left: 0;
+  position: fixed;
+  right: 400px;
+  top: 5em; /* top: 4em; */
+}
+
+
+#main-window-header {
+  background: linear-gradient(rgb(255, 0, 5), rgb(127, 0, 1));
+  color: white;
+  height: 28px;
+  left: 0;
+  /*padding-top: 2px;*/
+  /*line-height: 10px;*/
+  position: fixed;
+  line-height: 28px;
+  right: 0;
+  text-align: center;
+  top: 0;
+}
+
+/*input#myInput {*/
+   /*background-color: white;*/
+   /*border: none;*/
+   /*border-radius: 0px;*/
+   /*box-shadow: 0 0;*/
+  /*height: 24px;*/
+  /*position: absolute;*/
+  /*margin-left: 450px;*/
+/*}*/
+
+#main-window-footer {
+  align-items: center;
+  background: rgb(112, 112, 112);
+  bottom: 0;
+  color: white;
+  display: flex;
+  font-size: 12px;
+  height: 20px;
+  justify-content: space-between;
+  left: 0;
+  /*line-height: 20px;*/
+  padding: 0 16px;
+  /*padding-top: 2px;*/
+  position: fixed;
+  right: 0;
+  /*text-align: right;*/
+}
+
+#main-window-footer *{
+  font-size: 12px;
+}
+
+#main-window-footer a{
+  color: white;
+  text-decoration: none;
+  transition: 250ms;
+}
+
+#main-window-footer a:hover{
+  text-shadow: 0 0 6px white;
+}
+
+#app-version-number{
+  display: inline-block;
+  color: black;
+}
+
+.zoom-container{
+  display: inline-block;
+}
+
+/* NOTE-MAK: added title24 */
+.flexbox-sc{
+  display: flex;
+  justify-content: space-around;
+}
+
+.flexbox-sb{
+  display: flex;
+  justify-content: space-between;
+}
+
+.flexbox-sa{
+  display: flex;
+  justify-content: space-around;
+}
+
+.select-floor{
+  background-color: #7c7c7c;
+  background-image: url('lib/images/MultiFloorColour.png');
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: contain;
+  border: 1px solid black;
+  color: white;
+  padding-left: 16px;
+  -webkit-appearance: none;
+}
+/*.select-floor[floorplan=true]{
+  background-image: url('lib/images/MultiFloorColour.png');
+}*/
+.select-floor:focus{
+  border-color: red;
+  box-shadow: none;
+  outline: none;
+}
+.select-floor>option{
+  background-color: #ccc;
+  border: 1px solid red !important;
+  -webkit-appearance: none;
+}
+
+.modal {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  justify-content: center;
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 9;
+}
+
+/* NOTE-MAK: feature: blow-up-tabs */
+.nav-views{
+  display: flex;
+  left: 0;
+  line-height: 3em; /* line-height: 2em; */
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  right: 400px;
+  top: 2em;
+}
+
+.nav-views>a{
+  box-shadow: 0 0 8px #0d0d0d inset;
+  background-color: #666666;
+  color: white;
+  display: inline-block;
+  flex: 1;
+  /*font-size: 14px;*/
+  text-align: center;
+  text-decoration: none;
+  vertical-align: middle;
+}
+
+.nav-views>a:hover{
+  text-shadow: 0 0 3px #fff;
+}
+
+.current-view{
+  display: none;
+}
+
+.current-view:checked+a{
+  background-color: #E6E6E6;
+  color: black;
+  font-weight: bold;
+}
+
+
+div.canvasContainer {
+  /*float: left;*/
+  height: 100%;
+  /*max-height: 100%;*/
+  /*margin:0;*/
+  overflow: auto;
+  /*max-width: 100%;*/
+  /*width: 60%;*/
+  width: 100%;
+}
+
+fieldset {
+  border: none;
+}
+
+.picked {
+  border: 1px solid red !important;
+  box-shadow: 0 0 8px red;
+}
+
+.hide-this{
+  color:white;
+  display: inline-block;
+  font-size: 16px;
+  height: 14px;
+  position: absolute;
+  right: 2px;
+  top: 2px;
+  width:14px;
+}
+
+.hide-this:hover{
+  text-shadow: 0 0 4px white;
+}
+
+input[type=radio].type-radio{
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  display: inline-block;
+  height:30px;
+  transition: 200ms;
+  -webkit-appearance: none;
+  width: 30px;
+}
+#general input[type=radio].type-radio{
+  background-size: cover;
+  height: 30px;
+  width: 30px;
+}
+input[type=radio].type-radio:hover{
+  transform: scale(1.12);
+}
+input[type=radio].type-radio:active{
+  transform: scale(0.96);
+}
+
+select{
+  background-color: #CCCCCC;
+}
+select:focus{
+  outline: none !important;
+}
+
+option {
+  background-color: #F2F2F2;
+}
+
+
+/* Devices tabs */
+.indicator-and-arrows-container{
+  align-items: center;
+  display: flex;
+  justify-content: space-around;
+  padding-top: 8px;
+  transition: 200ms;
+}
+
+.arrow-btn:hover{
+  transform: scale(1.12, 1.12);
+}
+
+.arrow-btn:active{
+  transform: scale(0.96, 0.96);
+}
+
+#fixtures select,
+#fixtures input[type=text],
+#sensors select,
+#sensors input[type=text]{
+  width: 100%;
+}
+
+.enocean-id{
+  width: 50%;
+}
+
+/*Fixtures*/
+
+#fixtures .device-type-sub{
+  margin-top: 31px;
+}
+
+input[type=radio].type-radio[name=fixture-role]{
+  background-size: cover;
+}
+
+#fixture-role-ambient{
+  background-image: url('lib/images/AmbientLgUnselected.png');
+}
+#fixture-role-ambient:checked{
+  background-image: url('lib/images/AmbientLgSelected.png');
+}
+
+#fixture-role-task{
+  background-image: url('lib/images/TaskLgUnselected.png');
+}
+#fixture-role-task:checked{
+  background-image: url('lib/images/TaskLgSelected.png');
+}
+
+
+#fixture-role-accent{
+  background-image: url('lib/images/AccentLgUnselected.png');
+}
+#fixture-role-accent:checked{
+  background-image: url('lib/images/AccentLgSelected.png');
+}
+
+
+/*Sensors*/
+
+input[name=sensor-role][type=radio].type-radio{
+  background-size:cover;
+  border-radius: 50%;
+}
+
+#sensor-polling-rate{
+  display: inline-block;
+  width: 50%;
+}
+
+#sensor-role-al{
+  background-image: url('lib/images/ALSensoSmall.png');
+}
+#sensor-role-al:checked{
+  background-image: url('lib/images/ALSensoSmallSelected.png');
+}
+
+#sensor-role-aq{
+  background-image: url('lib/images/AQSensorSmall.png');
+}
+#sensor-role-aq:checked{
+  background-image: url('lib/images/AQSensorSmallSelected.png');
+}
+
+#sensor-role-pir{
+  background-image: url('lib/images/PIRSensorTopSmall.png');
+}
+#sensor-role-pir:checked{
+  background-image: url('lib/images/PIRSensorTopSmallSelected.png');
+}
+
+#sensor-role-ct{
+  background-image: url('lib/images/CTSensoSmall.png');
+}
+#sensor-role-ct:checked{
+  background-image: url('lib/images/CTSensoSmallSelected.png');
+}
+
+#sensor-role-pw{
+  background-image: url('lib/images/PWSensor.png');
+}
+#sensor-role-pw:checked{
+  background-image: url('lib/images/PWSensoSmallSelected.png');
+}
+
+#sensor-role-sw{
+  background-image: url('lib/images/OnOffSensorSmall.png');
+}
+#sensor-role-sw:checked{
+  background-image: url('lib/images/OnOffSensorSmallSelected.png');
+}
+/*NOTE-KAMLESH: Added #sensor-role-temp & #sensor-role-hum  Issue: DT-30, DT-32; */
+#sensor-role-temp{
+  background-image: url('lib/images/TempSensorSmall.png');
+}
+#sensor-role-temp:checked{
+  background-image: url('lib/images/TempSensorSmallSelected.png');
+}
+#sensor-role-hum{
+  background-image: url('lib/images/HumiditySensorSmall.png');
+}
+#sensor-role-hum:checked{
+  background-image: url('lib/images/HumiditySensorSmallSelected.png');
+}
+
+.centered{
+  text-align: center;
+}
+
+/*Tabs and content styling*/
+
+#tabs {
+  background: linear-gradient(#fff, #8E8E8E);
+  border: 1px solid #7E7E7E;
+  /*border-bottom-left-radius: 8px;*/
+  /*border-bottom-right-radius: 8px;*/
+  bottom:20px;
+  box-shadow: 0 0 2px #7E7E7E;
+  display: inline-block;
+  /*float: left;*/
+  /*max-height: 85%;*/
+  overflow-y: auto;
+  position: absolute;
+  /*float: right;*/
+  right: 0;
+  top: 28px;
+  width: 400px;
+  /*z-index: 99999;*/
+}
+
+
+
+.tabContent{
+  background-position: center top;
+  background-repeat: no-repeat;
+  display: none;
+}
+
+.tabContent:target  {
+  display: block;
+  padding: 8px 4px 0 4px !important;
+}
+
+#fixtures{
+  background-image: url('lib/images/fixture-panel-7boxes.png');
+}
+#fixtures.tall{
+  background-image: url('lib/images/fixture-panel-8boxes.png');
+}
+
+#sensors{
+  background-image: url('lib/images/sensor-panel-7boxes.png');
+}
+#sensors.tall{
+  background-image: url('lib/images/sensor-panel-8boxes.png');
+}
+
+#building{
+  background-image: url('lib/images/building-layer-panel.png');
+}
+
+#general{
+  background-image: url('lib/images/general-zone-panel.png');
+}
+/* NOTE- Kamlesh: DT-58 Beacon support Add left zone panel image;*/
+#beacon{
+  background-image: url('lib/images/beacon-zone-panel.png');
+}
+
+#user{
+  background-image: url('lib/images/user-zone-panel.png');
+}
+
+h4 {
+  font-weight: bold;
+  margin: 4px 0;
+  text-align: center;
+}
+
+.tab-heading{
+  margin-bottom: 20px;
+  margin-top: 8px;
+}
+
+h5 {
+  font-size: 14px;
+  font-style: italic;
+  font-weight: bold;
+  margin-bottom: 8px;
+  margin-top: 4px;
+  text-align: justify;
+}
+
+h6 {
+  text-align: center;
+  font-weight: normal;
+}
+
+.eyeContainer {
+  display: inline-block;
+}
+
+.equi-container {
+  display: flex;
+  justify-content: space-around;
+}
+
+.button-w-caption {
+  text-align: center;
+  width: 64px;
+}
+
+.row-one-button {
+  text-align: center;
+}
+
+  .row-one-button .button-w-caption {
+    display: inline-block;
+  }
+
+button > img {
+  max-height: 100%;
+}
+
+input[type='time'],
+input[type='number'],
+input[type='text']{
+  background-color: #B3B3B3;
+  border: none;
+  border-radius: 2px;
+  box-shadow: 0 0 1px black;
+}
+
+
+input[type='time']:focus,
+input[type='number']:focus,
+input[type='text']:focus{
+  box-shadow: 0 0 4px black;
+}
+
+input[type=number].ip-num,
+input[type=number].ip-port{
+  font-size: 12px;
+  text-align: center;
+}
+
+input[type='number'].ip-num{
+  display: inline-block;
+  width: 28px;
+}
+input[type='number'].ip-port{
+  display: inline-block;
+  width:auto;
+}
+
+.modal input{
+  background: #707070;
+  border: 1px solid red;
+  border-radius: 4px;
+  color: white;
+}
+
+
+.ip-input-container{
+  display: flex;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.ip-input-container input[type=number]{
+  display: inline-block;
+}
+
+.ip-input-container input[type='number']::-webkit-inner-spin-button,
+.ip-input-container input[type='number']::-webkit-outer-spin-button{
+  display: none;
+  margin: 0;
+}
+
+
+
+input[type=radio].button-radio-red {
+  background: none !important;
+  border: 1px solid black;
+  box-shadow: 0 0 3px black inset;
+  border-radius: 50%;
+  display: inline-block;
+  height: 11px;
+  margin: 0 !important;
+  vertical-align: middle;
+  -webkit-appearance: none !important;
+  width: 11px;
+}
+
+input[type=radio].button-radio-red:checked {
+  background-color: red !important;
+}
+
+.input-grid-width,
+.input-grid-height{
+  width: 50px;
+}
+
+#project-settings-dialog {
+  background: linear-gradient(white, #A5A5A4);
+  border: 1px solid rgb(100, 100, 100);
+  border-radius: 8px;
+  bottom: 5%;
+  box-shadow: 0 0 10px black;
+  display: inline-block;
+  /*height: 80%;*/
+  left: 20%;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+  /*overflow-y: scroll;*/
+  /*padding: 0 20px;*/
+  right: 20%;
+  position: absolute;
+  top: 5%;
+  width: 670px;
+}
+
+#project-settings-dialog input[type=text]{
+  width: 100%;
+}
+
+#project-settings-dialog button{
+  transition: 200ms;
+}
+
+#project-settings-dialog button:hover{
+  transform: scale(1.12);
+}
+
+#project-settings-dialog button:active{
+  transform: scale(0.96);
+}
+
+.project-settings-content{
+  background-attachment: local;
+  background-image: url(lib/images/project-settings-menu.png);
+  background-position: center -60px;
+  background-repeat: no-repeat;
+  bottom: 0;
+  /*border: 1px solid orange;*/
+  overflow-y: auto;
+  left: 0;
+  max-height: 668px;
+  padding: 0 70px;
+  position: absolute;
+  right: 0;
+  top: 28px;
+}
+
+.project-menu-section{
+  margin: 32px 0;
+}
+
+/*.project-view{
+  padding-top: 4px;
+}*/
+.floor-list-view{
+  height: 92px;
+  /*margin-bottom: 4px;*/
+  overflow-y: auto;
+}
+
+.floor-list-item{
+  align-items:center;
+  display:flex;
+  height: 30px;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+#project-settings-dialog input[type=text].floor-name{
+  color: #000;
+  font-weight:bold;
+  text-align: right;
+  width: 120px;
+}
+
+#project-settings-dialog input[type=text].floor-name.selected{
+  color: white;
+}
+
+.floor-view-headings{
+  display: flex;
+  padding: 0 8px;
+  justify-content: space-between;
+}
+
+.floorplan-file-label{
+  border-radius: 4px;
+  display: inline-block;
+  height: 29px;
+  transition: 200ms;
+}
+
+.floorplan-file-label *{
+  vertical-align: middle;
+}
+
+.floorplan-file-label:hover{
+  box-shadow: 0 0 4px grey;
+}
+
+.delete-floor-btn{
+  background-color: transparent;
+  background-image: url(lib/images/delete-cross.png);
+  background-position: center center;
+  /* background-repeat: no-repeat; */
+  /* background-size: contain; */
+  border: none;
+  border-radius: 2px;
+  box-shadow: 0 0 1px grey;
+  height: 17px;
+  transition: 200ms;
+  width: 17px;
+}
+
+/*.delete-floor-btn:hover{
+  border: 2px solid black;
+  box-shadow: 0 0 4px black;
+}*/
+
+.add-floor-btn{
+  background-color: transparent;
+  background-image: url(lib/images/AddFloor.png);
+  background-position: center center;
+  /* background-repeat: no-repeat; */
+  /* background-size: contain; */
+  border: none;
+  box-shadow: 0 0 1px grey;
+  border-radius: 2px;
+  height: 18px;
+  padding: 0 !important;
+  transition: 200ms;
+  width: 18px;
+}
+
+/*.add-floor-btn:hover{
+  box-shadow: 0 0 8px grey;
+}
+
+.add-floor-btn:active:{
+  border: 1px solid grey;
+}*/
+.add-floor-item{
+  /*margin-bottom: 40px;*/
+  margin-bottom: 0px;
+  margin-top: -4px;
+}
+
+.copy-floor-item{
+  margin-bottom: 5px;
+}
+
+.paste-floor-btn{
+  width: 50px;
+  background-color: #ccc;
+  padding-left: 3px;
+  padding-bottom: 3px;
+}
+button#project-settings-done {
+  margin-top: 10px;
+}
+
+.copy-floor-label{
+  font-weight: normal;
+}
+
+.copy-fixture-select{
+  min-width: 55px;
+  margin-right: 10px;
+  margin-left: -10px;
+}
+
+.add-floor-item *{
+  vertical-align: middle;
+}
+
+.add-floor-label{
+  /*font-size: 12px;*/
+  line-height: 27px;
+}
+
+input.view-floor-radio{
+  background: none;
+  border: 1px solid black;
+  border-radius: 2px;
+  display: inline-block;
+  height: 19px;
+  -webkit-appearance: none;
+  width: 26px;
+}
+
+input.view-floor-radio:checked{
+  background-image: url('lib/images/view-floorplan-eye.png');
+}
+
+input.view-floor-radio:hover{
+  box-shadow: 0 0 4px grey;
+}
+
+.floorplan-icon{
+  vertical-align: middle;
+}
+
+.grid-settings-dialog{
+  background: linear-gradient(white 80%, #A5A5A4);
+  border: 1px solid rgb(100, 100, 100);
+  border-radius: 8px;
+  box-shadow: 0 0 10px black;
+  display: inline-block;
+  margin-left: auto;
+  margin-right: auto;
+  width: 300px;
+}
+
+.grid-settings-dialog .field-wrapper{
+  margin: 4px 0;
+}
+
+.dialog-header {
+  background: linear-gradient(rgb(255, 0, 5), rgb(127, 0, 1));
+  font-weight: bold;
+  color: white;
+  line-height: 2em;
+  text-align: center;
+}
+
+/*Fixture and sensor tabs*/
+
+.device-type-sub{
+  margin-bottom: 24px;
+  margin-top: 15px;
+}
+
+#sensors .device-type-sub{
+  margin-bottom: 26px;
+  margin-top: 6px;
+}
+
+.indicator-and-arrows-container {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.indicator-container {
+  border: 2px dashed black;
+  border-radius: 10%;
+  display: inline-block;
+  height: 46px;
+  width: 46px;
+}
+
+.indicator {
+  background-repeat: no-repeat;
+  background-size: contain;
+  display: inline-block;
+  height: inherit;
+  width: inherit;
+}
+
+  .indicator[role='Ambient'] {
+    background-image: url(lib/images/AmbientLgUnselected.png);
+    /* background: linear-gradient(45deg, rgb(170, 0, 45), rgb(255, 0, 0) 28%, rgb(255, 230, 230)); */
+  }
+
+  .indicator[role='Task'] {
+    background-image: url(lib/images/TaskLgUnselected.png);
+    /* background: radial-gradient(rgb(255, 255, 255), rgb(0, 113, 188) 73%, rgb(0, 59, 146)); */
+    /* border-radius: 50%; */
+  }
+
+  .indicator[role='Accent'] {
+    background-image: url(lib/images/AccentLgUnselected.png);
+    /* background: linear-gradient(rgb(255, 255, 255), rgb(0, 198, 192) 56%%, rgb(0, 133, 163)); */
+  }
+
+  .indicator[role='AL'] {
+    background-image: url(lib/images/ALSensoLGTopBox.png);
+  }
+
+  .indicator[role='AQ'] {
+    background-image: url(lib/images/AQSensorLGTopBox.png);
+
+  }
+
+  .indicator[role='PIR'] {
+    background-image: url(lib/images/PIRSensorLGTopBox.png);
+  }
+
+  .indicator[role='CT'] {
+    background-image: url(lib/images/CTSensoLGTopBox.png);
+
+  }
+
+  .indicator[role='PW'] {
+    background-image: url(lib/images/PWSensoLGTopBox.png);
+  }
+  .indicator[role='SW']{
+    background-image: url(lib/images/OnOffSensorLGTopBox.png);
+
+  }
+  /* NOTE-KAMLESH: Issue DT-30, DT-32 - Added TEMP & HUM. */
+  .indicator[role='TEMP']{
+    background-image: url(lib/images/TempSensorLGTopBox.png);
+  }
+  .indicator[role='HUM']{
+    background-image: url(lib/images/HumiditySensorLGTopBox.png);
+  }
+
+  .indicator[role='EN']{
+    background-color: purple;
+  }
+
+.field-wrapper {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 2px;
+  padding-top: 1px;
+}
+
+
+.field {
+  display: inline-block;
+  flex: 1;
+  padding: 0 8px;
+}
+
+.field.name {
+  text-align: right;
+}
+
+.modal .field.name {
+  font-weight: bold;
+}
+
+.close-modal {
+  background-color: #ccc;
+  border: none;
+  border-radius: 16px;
+  box-shadow: 0 0 2px black;
+  display: inline-block;
+  margin-bottom: 1em;
+  transition: 200ms;
+  width: 4em;
+}
+
+.close-modal *{
+  vertical-align: middle;
+}
+
+.close-modal:hover{
+  box-shadow: 0 0 4px black;
+}
+
+.close-modal:active{
+  box-shadow: 0 0 2px black inset;
+  outline: none;
+}
+
+/* Common */
+
+.zone-name-container{
+  height: 64px;
+}
+.zone-name-container h4{
+  margin-bottom: 20px;
+}
+
+#general h4,
+#beacon h4,
+#user h4{
+  margin-bottom: 20px;
+  margin-top: 8px;
+}
+
+#general h5,
+#beacon h5,
+#user h5{
+  font-weight: bold;
+  margin-bottom: 6px;
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* NOTE-MAK: changing margins */
+.zone-container{
+  margin-bottom: 58px;
+}
+
+#beacon .zone-container{
+  margin-bottom: 110px;
+}
+
+
+button {
+  height: 24px;
+  width: 24px;
+}
+
+/*Building Tab*/
+
+.building-layer-container {
+  border: 2px solid black;
+  padding: 0.2em 1em;
+  text-align: center;
+}
+
+.working-hours-container {
+  line-height: 24px;
+  margin-top: 30px;
+  margin-bottom: 19px;
+}
+
+.hours-icon {
+  display: inline-block;
+  height: 24px;
+  margin: 0.4em;
+  width: 24px;
+}
+
+#building .occupancy-settings-cell{
+  height: 178px;
+  padding-top: 0;
+  margin-top: 32px;
+}
+
+#building .activation-occupancy-select{
+  margin-bottom: 8px;
+}
+
+#wh-icon {
+  background-image: url(lib/images/WorkingHoursLS.png);
+  -webkit-background-size: contain;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+#ooh-icon {
+  background-image: url(lib/images/OutOfHoursLS.png);
+  -webkit-background-size: contain;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+/* General Zones */
+/* NOTE-MAK: removed style. should be in activations.css
+container is now in schedule subview. */
+/*.general-ls-container{
+  margin-bottom: 24px;
+  margin-top: 9px;
+}*/
+
+.ls-icon {
+  display: inline-block;
+  height: 44px;
+  width: 44px;
+}
+
+#ls-general-zone{
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size:contain;
+}
+
+/* NOTE-MAK: ignoring */
+/*#general .zone-container{
+  margin-bottom: 32px;
+}*/
+
+/* NOTE-MAK: added margins for schedules */
+.activations-container{
+  margin-bottom: 82px;
+}
+
+#general .orientation-heading{
+  margin-bottom: 0;
+  margin-top: 22px;
+}
+
+#general h4.general-zone-type-heading{
+  margin-bottom: 16px;
+  margin-top: 12px;
+}
+
+#zone-general-rr{
+  background-image: url('lib/images/WC.png');
+}
+#zone-general-rr:checked{
+  background-image: url('lib/images/WCSelected.png');
+}
+#ls-general-zone[lightscene=rr]{
+  background-image: url('lib/images/WC_LS.png');
+}
+
+#zone-general-stairs{
+  background-image: url('lib/images/Stairs.png');
+}
+#zone-general-stairs:checked{
+  background-image: url('lib/images/StairsSelected.png');
+}
+#ls-general-zone[lightscene=stairs]{
+  background-image: url('lib/images/Stairs_LS.png');
+}
+#ls-general-zone[lightscene=off]{
+  background-image: url('lib/images/Stairs_LS.png');
+}
+
+
+#zone-general-elevator{
+  background-image: url('lib/images/Lift.png');
+}
+#zone-general-elevator:checked{
+  background-image: url('lib/images/LiftSelected.png');
+}
+#ls-general-zone[lightscene=elevator]{
+  background-image: url('lib/images/Lift_LS.png');
+}
+
+#zone-general-lobby{
+  background-image: url('lib/images/Lobby.png');
+}
+#zone-general-lobby:checked{
+  background-image: url('lib/images/LobbySelected.png');
+}
+#ls-general-zone[lightscene=lobby]{
+  background-image: url('lib/images/Lobby_LS.png');
+}
+
+
+#zone-general-exit{
+  background-image: url('lib/images/Exit.png');
+}
+#zone-general-exit:checked{
+  background-image: url('lib/images/ExitSelected.png');
+}
+#ls-general-zone[lightscene=exit]{
+  background-image: url('lib/images/Exit_LS.png');
+}
+
+#zone-general-cafeteria{
+  background-image: url('lib/images/Kitchen.png');
+}
+#zone-general-cafeteria:checked{
+  background-image: url('lib/images/KitchenSelected.png');
+}
+#ls-general-zone[lightscene=cafeteria]{
+  background-image: url('lib/images/Kitchen_LS.png');
+}
+
+#zone-general-aisle{
+  background-image: url('lib/images/Corridor.png');
+}
+#zone-general-aisle:checked{
+  background-image: url('lib/images/CorridorSelected.png');
+}
+#ls-general-zone[lightscene=aisle]{
+  background-image: url('lib/images/Corridor_LS.png');
+}
+
+#zone-general-feature{
+  background-image: url('lib/images/Feature.png');
+}
+#zone-general-feature:checked{
+  background-image: url('lib/images/FeatureSelected.png');
+}
+#ls-general-zone[lightscene=feature]{
+  background-image: url('lib/images/Feature_LS.png');
+}
+
+/* NOTE- Kamlesh: DT-58 Beacon Zones*/
+
+
+
+#beacon .orientation-heading{
+  margin: 0 !important;
+}
+
+input[type=radio].type-radio[name=beacon-zone-type]{
+  border: 1px solid black;
+  border-radius: 4px;
+  box-shadow: 0 0 4px black;
+}
+input[type=radio].type-radio[name=beacon-zone-type]:checked{
+  border-color: red;
+  box-shadow: 0 0 4px red;
+}
+
+#zone-beacon-shades{
+  background: linear-gradient(45deg, #C6DFC6 15%, #28a228 75%);;
+}
+
+#zone-beacon-information{
+  background: linear-gradient(45deg, #D1963A 10%, #FEE800 68%);
+}
+
+#zone-beacon-breakout{
+  background: linear-gradient(45deg, #D1963A 10%, #FEE800 68%);
+}
+
+#zone-beacon-status{
+  background: linear-gradient(45deg, #DF1D74 10%, #6A2B84 80%);
+}
+
+/*User Zones*/
+
+/* NOTE-MAK: removed style. should be in activations.css
+container is now in schedule subview. */
+/*.light-scene-container{
+  margin-bottom: 23px;
+}*/
+
+#user .orientation-heading{
+  margin: 0 !important;
+}
+
+input[type=radio].type-radio[name=user-zone-type]{
+  border: 1px solid black;
+  border-radius: 4px;
+  box-shadow: 0 0 4px black;
+}
+input[type=radio].type-radio[name=user-zone-type]:checked{
+  border-color: red;
+  box-shadow: 0 0 4px red;
+}
+
+#zone-user-desk{
+  background: linear-gradient(45deg, rgb(0, 161, 154), rgb(50, 169, 225));
+}
+
+#zone-user-meeting{
+  background: linear-gradient(45deg, #DF1D74 10%, #6A2B84 80%);
+}
+
+#zone-user-breakout{
+  background: linear-gradient(45deg, #D1963A 10%, #FEE800 68%);
+}
+
+#zone-user-lab{
+  background: linear-gradient(45deg, #4FAAD9 15%, #290FF9 75%);
+}
+
+/* Brightness sliders */
+
+input[type=range].dh-slider.default-brightness-slider::-webkit-slider-runnable-track{
+  background-image: url(lib/images/BrightnessSliderBar.png)
+}
+
+.brightness-slider-label-container>span{
+  display: inline-block;
+  width: 33px;
+}
+
+.default-brightness-value{
+  font-weight: bold;
+}

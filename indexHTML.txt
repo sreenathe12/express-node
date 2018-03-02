@@ -1,0 +1,1575 @@
+<!-- /*******************************************************************************
+  Transcend Application Source File
+
+  Company:
+    Molex, LLC
+  Summary:
+    This file contains the source code for the design tool UI markup.
+
+  COPYRIGHT (C) 2016 Molex - All Rights Reserved
+
+*******************************************************************************/ -->
+<!DOCTYPE html>
+<html>
+
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="css/style.css" />
+    <!-- NOTE-MAK: using 1.12.1 jquery -->
+    <script src="scripts/lib/jquery-ui-1.12.1/external/jquery/jquery.js"></script>
+    <!-- <script src="scripts/lib/jquery.js"></script>  -->
+    <!-- NOTE-MAK: using 1.12.1 jquery-ui -->
+    <script src="scripts/lib/jquery-ui-1.12.1/jquery-ui.min.js"></script>
+    <link rel="stylesheet" href="scripts/lib/jquery-ui-themes-1.12.1/themes/base/jquery-ui.min.css">
+    <link rel="stylesheet" href="scripts/lib/jquery-ui-themes-1.12.1/themes/base/theme.css">
+    <!--<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">-->
+    <script src="scripts/lib/pdfjs/build/pdf.js"></script>
+    <script src="scripts/index.js"></script>
+    <script src="scripts/scheduler/schedule-events.js"></script>
+    <!-- NOTE-MAK: adding pickadate dependency -->
+    <script src="node_modules/pickadate/lib/compressed/legacy.js"></script>
+    <script src="node_modules/pickadate/lib/compressed/picker.js"></script>
+    <script src="node_modules/pickadate/lib/compressed/picker.date.js"></script>
+    <script src="node_modules/pickadate/lib/compressed/picker.time.js"></script>
+    <link rel="stylesheet" href="node_modules/pickadate/lib/compressed/themes/default.css">
+    <link rel="stylesheet" href="node_modules/pickadate/lib/compressed/themes/default.date.css">
+    <link rel="stylesheet" href="node_modules/pickadate/lib/compressed/themes/default.time.css">
+    <!-- NOTE-MAK: adding temporary scheduler script and style -->
+    <script src="scripts/scheduler/scheduleTabs.js"></script>
+    <script src="scripts/scheduler/scheduleTabs-general.js"></script>
+    <script src="scripts/scheduler/scheduleTabs-beacon.js"></script>
+    <link rel="stylesheet" href="css/scheduler.css">
+    <!-- NOTE-MAK: this block is for src/node_modules/jquery and jquery-ui dependencies for require -->
+    <!-- jquery & jquery-ui (npm install) in node_modules is causing nw to not run -->
+    <!-- jquery js and css are commented out because of failing run when src/jquery/node_modules is removed -->
+    <!-- jquery-ui base/ theme -->
+    <!-- <script src="node_modules/jquery/dist/jquery.min.js"></script> -->
+    <!-- requires jquery-ui `npm install & grunt` -->
+    <!-- <link rel="stylesheet" href="node_modules/jquery-ui/themes/base/theme.css"> -->
+    <!-- NOTE-MAK: added livereload snipet. checks parent node_modules/ outside of src/ -->
+    <script>
+    // TODO-MAK: carry over snipets
+    $(document).ready(function() {
+
+    });
+
+    var gulp = require('gulp');
+    gulp.task('reload', function() {
+        if (location) location.reload();
+    });
+
+    gulp.watch('**/*', ['reload']);
+    </script>
+</head>
+
+<body>
+    <!-- Templates -->
+    <!-- Mood menu -->
+    <template id="mood-menu">
+        <div class="mood-container" hidden>
+            <div class="hide-this">
+                <</div>
+                    <header class="dialog-header">Mood</header>
+                    <div class="mood-inputs-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-alert" value="alert">
+                            <label for="mood-alert" class="mood-label"></label>
+                            <p>alert</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-focused" value="focused">
+                            <label for="mood-focused" class="mood-label"></label>
+                            <p>focused</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-vigilant" value="vigilant">
+                            <label for="mood-vigilant" class="mood-label"></label>
+                            <p>vigilant</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-calm" value="calm">
+                            <label for="mood-calm" class="mood-label"></label>
+                            <p>calm</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-relaxed" value="relaxed">
+                            <label for="mood-relaxed" class="mood-label"></label>
+                            <p>relaxed</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-cozy" value="cozy">
+                            <label for="mood-cozy" class="mood-label"></label>
+                            <p>cozy</p>
+                        </div>
+
+                    </div>
+            </div>
+    </template>
+    <template id="mood-menu-beacon">
+        <div class="mood-container" hidden>
+            <div class="hide-this">
+                <</div>
+                    <header class="dialog-header">Mood</header>
+                    <div class="mood-inputs-container">
+                        <!-- <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-alert" value="alert">
+                            <label for="mood-alert" class="mood-label"></label>
+                            <p>alert</p>
+                        </div> -->
+
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-fire" value="fire">
+                            <label for="mood-fire" class="mood-label"></label>
+                            <p>Fire</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-green" value="ok">
+                            <label for="mood-green" class="mood-label"></label>
+                            <p>Ok</p>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="ls-mood" class="mood" id="mood-blue" value="blue">
+                            <label for="mood-blue" class="mood-label"></label>
+                            <p>Blue</p>
+                        </div>
+                    </div>
+            </div>
+    </template>
+    <!-- Floor view item -->
+    <template id="floor-view-item">
+        <div class="floor-list-item">
+            <button class="delete-floor-btn"></button>
+            <input type="text" name="floor-name-" id="floor-name-" class="floor-name">
+            <input type="file" name="floorplan-" id="floorplan-" class="floorplan-file-input" hidden>
+            <label for="floorplan-" class="floorplan-file-label">
+                <img src="css/lib/images/BrowseIcon.png" alt="BrowseIcon"> Browse...
+            </label>
+            <img src="" alt="" class="floorplan-icon">
+            <input type="radio" name="current-floor" id="" class="view-floor-radio">
+        </div>
+    </template>
+    <!-- Activation: zone active time settings cell -->
+    <template id="activation-zone-active-settings">
+        <!-- <input type="time" name="activation-time-from" id="activation-time-from" class="active-from" step=60 value="06:00">
+        <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+        <input type="time" name="activation-time-to" id="activation-time-to" class="active-to" step=60 value="22:00"> -->
+        <div class="equi-container">
+            <label for="timeout-date_from">Start Time</label>
+            <label for="timeout-date_from">End Time</label>
+        </div>
+        <div class="fieldset occupancy equi-container">
+            <div class="equi-container">
+                <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                <input type="text" class="timepicker" id="activation-time-from" class="active-from">
+            </div>
+            <div class="equi-container">
+                <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                <input type="text" class="timepicker" id="activation-time-to" class="active-to">
+            </div>
+        </div>
+    </template>
+    <!-- NOTE-MAK: removing occupancy options -->
+    <!--     <template id="activation-occupancy-settings">
+        <select name="activation-occupancy-setting" class="activation-occupancy-select" id="activation-occupancy-setting">
+            <option value="default">Fade</option>
+            <option value="off">Switch Off</option>
+            <option value="BuildingDefault">Switch to Building Default</option>
+            <option value="stayOn">Stay On</option>
+        </select>
+        <div class="activation-time-input-container timeout">
+            <p>TimeOut</p>
+            <div class="flexbox-sb">
+                <input type="number" name="activation-timeout-min" id="activation-timeout-min" class="activation-timeout timeout-min" min="00" max="59" maxlength="2">:
+                <input type="number" name="activation-timeout-sec" id="activation-timeout-sec" class="activation-timeout timeout-sec" min="00" max="59" maxlength="2">
+            </div>
+            <div class="flexbox-sa"><span class="short">mm</span><span>:</span><span class="short">ss</span></div> -->
+    <!-- min -->
+    <!--         </div>
+        <div class="activation-time-input-container fadeout">
+            <p>FadeOut</p>
+            <div class="flexbox-sb">
+                <input type="number" name="activation-fadeout-min" id="activation-fadeout-min-" class="activation-fadeout fadeout-min" min="00" max="59" maxlength="2">:
+                <input type="number" name="activation-fadeout-sec" id="activation-fadeout-sec-" class="activation-fadeout fadeout-sec" min="00" max="59" maxlength="2" step="2">
+            </div>
+            <div class="flexbox-sa"><span class="short">mm</span><span>:</span><span class="short">ss</span></div>
+        </div> -->
+    <!--     </template> -->
+    <template id="activation-occupancy-settings">
+        <!-- NOTE-MAK: added occupancy options -->
+        <!--         <div class="fieldset occupancy">
+            <label for="timeout-checkbox">Timeout</label>
+            <input type="checkbox" class="ui-checkbox" id="timeout-checkbox">
+            <label for="fadeout-checkbox">Fadeout</label>
+            <input type="checkbox" class="ui-checkbox" id="fadeout-checkbox">
+            <label for="manual-on-checkbox">Manual On</label>
+            <input type="checkbox" class="ui-checkbox" id="manual-on-checkbox">
+        </div> -->
+        <div class="activation-time-input-container timeout">
+            <label for="timeout-checkbox">Timeout</label>
+            <div class="flexbox-sb">
+                <input type="number" name="activation-timeout-min" id="activation-timeout-min" class="activation-timeout timeout-min" min="00" max="59" maxlength="2">:
+                <input type="number" name="activation-timeout-sec" id="activation-timeout-sec" class="activation-timeout timeout-sec" min="00" max="59" maxlength="2">
+            </div>
+            <div class="flexbox-sa"><span class="short">mm</span><span>:</span><span class="short">ss</span></div>
+            <!-- min -->
+        </div>
+        <div class="activation-time-input-container fadeout">
+            <label for="timeout-checkbox">Fadeout</label>
+            <div class="flexbox-sb">
+                <input type="number" name="activation-fadeout-min" id="activation-fadeout-min-" class="activation-fadeout fadeout-min" min="00" max="59" maxlength="2">:
+                <input type="number" name="activation-fadeout-sec" id="activation-fadeout-sec-" class="activation-fadeout fadeout-sec" min="00" max="59" maxlength="2" step="2">
+            </div>
+            <div class="flexbox-sa"><span class="short">mm</span><span>:</span><span class="short">ss</span></div>
+        </div>
+    </template>
+    <!-- Activation: daylight harvesting settings cell -->
+    <template id="activation-dh-settings">
+        <div class="centered">
+            <strong><em>Target Lux: </em></strong>
+            <input type="number" name="target-lux" id="target-lux" class="target-lux-num" min="0" max="10000">
+        </div>
+        <br/>
+        <div class="centered"><strong><em>Increase:</em></strong></div>
+        <input type="range" name="dh-delta-up" id="dh-delta-up" class="dh-slider dh-delta-up" value="0.7" min="0.4" max="1.0" step="0.3">
+        <div class="slider-label-container centered">
+            <span>Low</span>
+            <span>Medium</span>
+            <span>High</span>
+        </div>
+        <br />
+        <div class="centered"><strong><em>Decrease:</em></strong></div>
+        <input type="range" name="dh-delta-down" id="dh-delta-down" class="dh-slider dh-delta-down" value="0.7" min="0.4" max="1.0" step="0.3">
+        <div class="slider-label-container centered">
+            <span>Low</span>
+            <span>Medium</span>
+            <span>High</span>
+        </div>
+    </template>
+    <!-- Orientation widget -->
+    <template id="orientation-widget">
+        <input type="radio" name="orientation" value="0" id="orientation-0" class="input-orientation orientation-0">
+        <input type="radio" name="orientation" value="2" id="orientation-2" class="input-orientation orientation-2">
+        <input type="radio" name="orientation" value="4" id="orientation-4" class="input-orientation orientation-4">
+        <input type="radio" name="orientation" value="6" id="orientation-6" class="input-orientation orientation-6">
+        <input type="radio" name="orientation" value="1" id="orientation-1" class="input-orientation orientation-1">
+        <input type="radio" name="orientation" value="3" id="orientation-3" class="input-orientation orientation-3">
+        <input type="radio" name="orientation" value="5" id="orientation-5" class="input-orientation orientation-5">
+        <input type="radio" name="orientation" value="7" id="orientation-7" class="input-orientation orientation-7">
+    </template>
+    <header id="main-window-header"></header>
+    <!--<div class="main-window-heade">-->
+    <!--<header id="main-window-header"></header>-->
+    <!--</div>-->
+    <!--<div class = "main-header">-->
+        <!--<input type="text" id="myInput" placeholder="Search..." title="Type in a name" value="" onchange="searchInputValue()">-->
+        <!--<h1><span id="main-window-header"></span></h1>-->
+    <!--</div>-->
+    <div>
+        <!-- Hidden inputs for file dialogs (the one naitve thing NW doesn't do the easy way!) -->
+        <input type="file" id="open-file-floorplan" style="display:none;" accept="image/*" />
+        <input type="file" id="save-project" style="display:none;" nwsaveas="dt.tar.gz" />
+        <input type="file" id="load-project" style="display:none;" accept=".gz" />
+        <input type="file" id="export-device-list" style="display:none;" nwsaveas="devices.ini" />
+        <input type="file" id="export-project" style="display: none;" nwsaveas="project.json" />
+        <nav class="nav-views">
+            <input type="radio" name="current-view" id="view-fixtures" class="current-view" value="fixtures">
+            <a href="#fixtures" class="view-link" data-view="fixtures">Fixtures</a>
+            <input type="radio" name="current-view" id="view-sensors" class="current-view" value="sensors">
+            <a href="#sensors" class="view-link" data-view="sensors">Sensors</a>
+            <input type="radio" name="current-view" id="view-building" class="current-view" value="building">
+            <a href="#building" class="view-link" data-view="building">Building Layer</a>
+            <input type="radio" name="current-view" id="view-general" class="current-view" value="general">
+            <a href="#general" class="view-link" data-view="general">General Zones</a>
+            <!-- NOTE- Kamlesh DT-58 Add beacon support -->
+            <input type="radio" name="current-view" id="view-beacon" class="current-view" value="beacon">
+            <a href="#beacon" class="view-link" data-view="beacon">Utility Zones</a>
+            <input type="radio" name="current-view" id="view-user" class="current-view" value="user" checked>
+            <a href="#user" class="view-link" data-view="user">User Zones</a>
+        </nav>
+        <div id="canvas-container">
+            <canvas id="main" tabindex="1"></canvas>
+        </div>
+        <div id="tabs" class="tabsClass">
+            <div id="containerForSearchId" class="conatinerForSearchClass">
+                <div class="inputSearchBox">
+                    <div>
+                        <input type="text" class="form-control" id="inputSearchValueBox" placeholder="Search..." value=""
+                               onchange="searchInputValue()"/>
+                        <img src="css/lib/images/musica-searcher.png" class="imageClick" alt="click me for search"
+                             id="searchIcon" onclick="searchInputValueByClick()">
+                    </div>
+                    <div id="searchResultCount">
+                    </div>
+                </div>
+            <!-- NOTE-MAK: Fixtures -->
+            <div id="fixtures" class="tabContent tall">
+                <h4 class="tab-heading">Fixtures</h4>
+                <div class="current-fixture">
+                    <h4>Current Fixture</h4>
+                    <div class="indicator-and-arrows-container">
+                        <img src="css/lib/images/PreviousArrow.png" alt="prev" class="arrow-btn arrow-prev">
+                        <div class="indicator-container">
+                            <div class="indicator" role="Ambient"></div>
+                        </div>
+                        <img src="css/lib/images/NextArrow.png" alt="next" class="arrow-btn arrow-next">
+                    </div>
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="fixture-role" id="fixture-role-ambient" class="type-radio" value="Ambient">
+                            <label for="fixture-role-ambient">Ambient</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="fixture-role" id="fixture-role-task" class="type-radio" value="Task">
+                            <label for="fixture-role-task">Task</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="fixture-role" id="fixture-role-accent" class="type-radio" value="Accent">
+                            <label for="fixture-role-accent">Accent</label>
+                        </div>
+                    </div>
+                    <div class="centered device-type-sub">Select Fixture Role</div>
+                    <div id="current-fixture-data" class="device-field-container">
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Name</span></div>
+                            <div class="field">
+                                <input type="text" name="fixture-name" class="device-name" id="fixture-name">
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Protocol</span></div>
+                            <div class="field">
+                                <select id="fixture-protocol" name="protocol" class="device-protocol">
+                                    <!-- NOTE-MAK: Added option CoAPv1.1 -->
+                                    <option value="CoAPv1.1">CoAPv1.1</option>
+                                    <option value="CoAPv1">CoAP</option>
+                                    <option value="MolexUDPv1" selected>UDP</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>IP Address</span></div>
+                            <div class="field">
+                                <div class="ip-input-container" id="fixture-ip">
+                                    <input type="number" name="ip-num-fixture-1" id="ip-num-fixture-1" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-fixture-2" id="ip-num-fixture-2" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-fixture-3" id="ip-num-fixture-3" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-fixture-4" id="ip-num-fixture-4" class="ip-num" min="0" max="255" maxlength="3">:
+                                    <input type="number" name="ip-port-fixture" id="ip-port-fixture" class="ip-port" min="0" max="65535" maxlength="5">
+                                </div>
+                            </div>
+                            <!-- <div class="field"><input type="text" name="fixture-ip" id="fixture-ip" class="device-ip"></div> -->
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Type</span></div>
+                            <div class="field">
+                                <!--<input type="text" name="fixture-type" id="fixture-type">-->
+                                <select name="fixture-type" id="fixture-type" class="device-type">
+                                    <option value="MolexTroffer" selected>Molex Troffer</option>
+                                    <!--<option value="Molex Linear">Molex Linear</option>
+                  <option value="Molex Spot">Molex Spot</option>
+                  <option value="Molex Under Cabinet"> Molex Under Cabinet</option>-->
+                                    <option value="Molex Beacon">Beacon</option>
+                                    <option value="EnOcean">EnOcean</option>
+                                    <option value="Unknown">Blind</option>
+                                    <option value="Unknown">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-wrapper enocean-field" id="enocean-field-fixture" hidden>
+                            <div class="field name">EnOcean ID</div>
+                            <div class="field">
+                                <input type="text" name="enocean-id-fixture" id="enocean-id-fixture" class="enocean-id">
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Color Space</span></div>
+                            <div class="field">
+                                <select name="color-space" id="fixture-color-space" class="device-color-space">
+                                    <option value="RGB">RGB</option>
+                                    <option value="RGBW">RGBW</option>
+                                    <option value="KI">KI</option>
+                                    <option value="I">I</option>
+                                    <option value="CWWW" selected="selected">CWWW</option>
+                                    <option value="CW">CW</option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- NOTE-MAK: added coap text field -->
+                        <div class="field-wrapper">
+                            <div class="field name"><span>ID</span></div>
+                            <div class="field">
+                                <input type="text" name="coap-identifier" class="device-coap-identifier"
+                                        id="coap-identifier-fixture" list="toffers">
+                                <datalist id="toffers">
+                                    <option value="d0.1_TrofferLight">d0.1_TrofferLight</option>
+                                    <option value="d0.2_RGBW">d0.2_RGBW</option>
+                                </datalist>
+                                </input>
+                            </div>
+                        </div>
+
+                        <!--<div class="field-wrapper">
+                <div class="field name"><span>Floor</span></div>
+                <div class="field"><span id="fixture-floor"></span></div>
+            </div>-->
+                        <div class="field-wrapper">
+                            <div class="field name"><span>In Zone</span></div>
+                            <div class="field"><span id="fixture-zone"></span></div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Controller</span></div>
+                            <div class="field"><span id="fixture-controller"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- NOTE-MAK: Sensors -->
+            <div id="sensors" class="tabContent tall">
+                <h4 class="tab-heading">Sensors</h4>
+                <div class="current-sensor">
+                    <h4>Current Sensor</h4>
+                    <div class="indicator-and-arrows-container">
+                        <img src="css/lib/images/PreviousArrow.png" alt="prev" class="arrow-btn arrow-prev">
+                        <div class="indicator-container">
+                            <div class="indicator" role="AL"></div>
+                        </div>
+                        <img src="css/lib/images/NextArrow.png" alt="next" class="arrow-btn arrow-next">
+                    </div>
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-al" class="type-radio" value="AL">
+                            <label for="sensor-role-al">Lux Level</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-aq" class="type-radio" value="AQ">
+                            <div>
+                                <label for="sensor-role-aq">Air Quality</label>
+                            </div>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-pir" class="type-radio" value="PIR">
+                            <label for="sensor-role-pir">Presence</label>
+                        </div>
+                    </div>
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-ct" class="type-radio" value="CT">
+                            <label for="sensor-role-ct">Color Temp</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-pw" class="type-radio" value="PW">
+                            <label for="sensor-role-pw">Power</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-sw" class="type-radio" value="SW">
+                            <label for="sensor-role-sw">On/Off</label>
+                        </div>
+                    </div>
+                    <!--NOTE-KAMLESH: Issue DT-30, DT-32 - Added Temperature & Humidity and hidden div for alignment.  -->
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-temp" class="type-radio" value="TEMP">
+                            <label for="sensor-role-temp">Temperature</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="sensor-role" id="sensor-role-hum" class="type-radio" value="HUM">
+                            <label for="sensor-role-hum">Humidity</label>
+                        </div>
+                        <div class="button-w-caption">
+
+                        </div>
+                    </div>
+
+                    <div class="centered device-type-sub">Select Sensor Role</div>
+                    <div id="current-sensor-data" class="device-field-container">
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Name</span></div>
+                            <div class="field">
+                                <input type="text" name="sensor-name" id="sensor-name" class="device-name">
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Protocol</span></div>
+                            <div class="field">
+                                <select name="sensor-protocol" id="sensor-protocol" class="device-protocol">
+                                    <!-- NOTE-MAK: Added option CoAPv1.1 -->
+                                    <option value="CoAPv1.1">CoAPv1.1</option>
+                                    <option value="CoAPv1">CoAP</option>
+                                    <option value="MolexUDPv1" selected>UDP</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>IP Address</span></div>
+                            <div class="field">
+                                <div class="ip-input-container" id="sensor-ip">
+                                    <input type="number" name="ip-num-sensor-1" id="ip-num-sensor-1" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-sensor-2" id="ip-num-sensor-2" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-sensor-3" id="ip-num-sensor-3" class="ip-num" min="0" max="255" maxlength="3">.
+                                    <input type="number" name="ip-num-sensor-4" id="ip-num-sensor-4" class="ip-num" min="0" max="255" maxlength="3">:
+                                    <input type="number" name="ip-port-sensor" id="ip-port-sensor" class="ip-port" min="0" max="65535" maxlength="5">
+                                </div>
+                            </div>
+                            <!-- <div class="field"><input type="text" name="sensor-ip" id="sensor-ip" class="device-ip"></div> -->
+                        </div>
+                        <!--<div class="field-wrapper">
+                <div class="field name"><span>Floor</span></div>
+                <div class="field"><span id="sensor-floor"></span></div>
+            </div>-->
+                        <div class="field-wrapper">
+                            <div class="field name">Type</div>
+                            <div class="field">
+                                <select name="sensor-type" id="sensor-type" class="device-type">
+                                    <option value="MolexSensor" selected>Molex Sensor</option>
+                                    <!-- <option value="Molex Beacon">Beacon</option> -->
+                                    <option value="EnOcean">EnOcean</option>
+                                    <option value="Unknown">Other Sensor</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field-wrapper enocean-field" id="enocean-field-sensor" hidden="">
+                            <div class="field name">EnOcean ID</div>
+                            <div class="field">
+                                <input type="text" name="enocean-id-sensor" id="enocean-id-sensor" class="enocean-id">
+                            </div>
+                        </div>
+                        <!-- NOTE-MAK: added coap text field -->
+                        <div class="field-wrapper">
+                            <div class="field name"><span>ID</span></div>
+                            <div class="field">
+                                <input type="text" name="coap-identifier" class="device-coap-identifier"
+                                       id="coap-identifier-sensor" list="sensorsID">
+                                <datalist id="sensorsID">
+                                    <option value="d0.3_PIR">d0.3_PIR</option>
+                                    <option value="d0.4_ALS">d0.4_ALS</option>
+                                    <option value="d0.6_CCT">d0.6_CCT</option>
+                                    <option value="d0.8_POWER">d0.8_POWER</option>
+                                </datalist>
+                                </input>
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Polling Rate</span></div>
+                            <div class="field">
+                                <input type="number" name="sensor-polling-rate" id="sensor-polling-rate">
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>In Zone</span></div>
+                            <div class="field"><span id="sensor-zone"></span></div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name"><span>Controller</span></div>
+                            <div class="field"><span id="sensor-controller"></span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+            <!-- NOTE-MAK: Building -->
+            <div id="building" class="tabContent">
+                <div class="centered">
+                    <h4 class="tab-heading">Building Layer</h4>
+                    <div class="working-hours-container activation-time-cell">
+                        <!-- <div>
+                            <em id="wh-heading">Working Hours:</em>
+                        </div>
+                        <input type="time" id="wh-start" name="wh-start" class="active-from" step="60">
+                        <div class="hours-icon" id="wh-icon"></div>
+                        <input type="time" id="wh-end" name="wh-end" class="active-to" step="60"> -->
+                        <div class="equi-container">
+                            <label for="timeout-date_from">Start Time</label>
+                            <label for="timeout-date_from">End Time</label>
+                        </div>
+                        <div class="fieldset occupancy equi-container">
+                            <div class="equi-container">
+                                <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                <input type="text" class="timepicker" id="building-activation-time-from" class="building-active-from">
+                            </div>
+                            <div class="equi-container">
+                                <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                <input type="text" class="timepicker" id="building-activation-time-to" class="building-active-to">
+                            </div>
+                        </div>
+                    </div>
+                    <!-- <hr /> -->
+                    <em>Out of Hours</em>
+                    <br>
+                    <div class="hours-icon" id="ooh-icon"></div>
+                    <!-- <hr /> -->
+                </div>
+                <div class="centered occupancy-settings-cell">
+                    <em>Occupancy</em>
+                    <br />
+                    <img src="css/lib/images/Occupancy.png" alt="occupancy">
+                    <br />
+                </div>
+                <!-- <hr /> -->
+                <div class="centered dh-settings-cell">
+                    <em>Daylight Harvesting</em>
+                    <br />
+                    <img src="css/lib/images/DaylightHarvesting.png" alt="daylight harvesting">
+                    <br />
+                </div>
+            </div>
+            <!-- NOTE-MAK: General -->
+            <div id="general" class="tabContent">
+                <h4 class="tab-heading">General Zones</h4>
+                <div class="centered zone-name-container">
+                    <h4>Zone Name</h4>
+                    <input type="text" class="zone-name" />
+                </div>
+                <h4 class="general-zone-type-heading">General Zones</h4>
+                <div class="zone-container">
+                    <!-- <div class="row-one-button">
+              <div class="button-w-caption">
+                  <button class="zone-button" id="zone-building"></button>
+                  <p>Building Layer</p>
+              </div>
+          </div>
+          <hr /> -->
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-rr" class="type-radio" value="RR">
+                            <br>
+                            <label for="zone-general-rr">RR</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-stairs" class="type-radio" value="Stairs">
+                            <label for="zone-general-stairs">Stairs</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-elevator" class="type-radio" value="Elevator">
+                            <label for="zone-general-elevator">Elevator</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-lobby" class="type-radio" value="Lobby">
+                            <label for="zone-general-lobby">Lobby</label>
+                        </div>
+                    </div>
+                    <!-- <hr /> -->
+                    <div class="equi-container">
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-exit" class="type-radio" value="Exit">
+                            <label for="zone-general-exit">Exit</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-cafeteria" class="type-radio" value="Cafeteria">
+                            <label for="zone-general-cafeteria">Cafeteria</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-aisle" class="type-radio" value="Aisle">
+                            <label for="zone-general-aisle">Aisle</label>
+                        </div>
+                        <div class="button-w-caption">
+                            <input type="radio" name="general-zone-type" id="zone-general-feature" class="type-radio" value="Feature">
+                            <label for="zone-general-feature">Feature</label>
+                        </div>
+                    </div>
+                </div>
+                <!-- NOTE-MAK: feature: activation-button, lightscene moved to subview -->
+                <!-- <h5>Light Scene</h5>
+                <div class="centered general-ls-container">
+                    <div id="ls-general-zone" class="ls-icon"></div>
+                </div> -->
+                <!-- TODO-MAK: using only a schedule activation button. reusing time icon for now. id also needs schedule id-->
+                <h5>Schedules</h5>
+                <div class="activations-container">
+                    <div class="equi-container">
+                        <div class="button-w-caption activation">
+                            <button name="activation-time-general" id="activation-time-general" class="activation-checkbox activation-time"></button>
+                        </div>
+                    </div>
+                </div>
+                <!-- NOTE-MAK: commenting out old activation buttons -->
+                <!--                 <h5>Activations</h5>
+                <div class="activations-container">
+                    <div class="equi-container">
+                        <div class="button-w-caption activation">
+                            <button name="activation-time-general" id="activation-time-general" class="activation-checkbox activation-time"></button>
+                            <span>Time</span>
+                        </div>
+                        <div class="button-w-caption activation">
+                            <button name="activation-occupancy-general" id="activation-occupancy-general" class="activation-checkbox activation-occupancy"></button>
+                            <span>Occupancy</span>
+                        </div>
+                        <div class="button-w-caption activation">
+                            <button name="activation-dh-user" id="activation-dh-user" class="activation-checkbox activation-dh"></button>
+                            <span>Daylight Harvesting</span>
+                        </div>
+                    </div>
+                </div> -->
+                <div class="activation-settings" id="activation-general" hidden>
+                        <div id="general-schedule-tab">
+                            <div class="hide-this">^</div>
+                            <header class="dialog-header">Activation</header>
+                            <div id="dialog-general" title="Add Schedule">
+                                <form>
+                                    <fieldset class="ui-helper-reset">
+                                        <label for="tab_title">Name</label>
+                                        <input type="text" name="tab_title" id="tab_title_general" value="" class="ui-widget-content ui-corner-all">
+                                    </fieldset>
+                                </form>
+                            </div>
+                            <ul id='general-schedule'>
+                                <li><a href="#tabs-general-1">default</a></li>
+                                <li id='plus-general-1'>
+                                    <button class="schedule-button" id="add_tab_general"><span class='ui-icon ui-icon-plus' role='presentation'></span></button>
+                                </li>
+                            </ul>
+                            <table>
+                                <tr>
+                                    <th>Activations</th>
+                                    <th>Settings</th>
+                                </tr>
+                                <tr class="activation-settings-time-row">
+                                    <td>
+                                        <div class="centered">
+                                            <img src="css/lib/images/Time.png" alt="Time">
+                                        </div>
+                                        <div class="centered">Time</div>
+                                    </td>
+                                    <td>
+                                      <div id="time_schedule_general" style="display:none">
+                                        <div class="equi-container">
+                                            <label for="timeout-date_from">At Time</label>
+                                        </div>
+                                        <div class="fieldset occupancy equi-container">
+                                            <div class="equi-container">
+                                                <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                <input type="text" class="timepicker" id="time_start_schedule_general">
+                                            </div>
+                                        </div>
+                                      </div>
+                                      <div  id="time_default_general">
+                                          <div class="equi-container">
+                                              <label for="timeout-date_from">Start Time</label>
+                                              <label for="timeout-date_from">End Time</label>
+                                          </div>
+                                          <div class="fieldset occupancy equi-container">
+                                              <div class="equi-container">
+                                                  <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                  <input type="text" class="timepicker" id="activation-time-from" class="active-from">
+                                              </div>
+                                              <div class="equi-container">
+                                                  <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                  <input type="text" class="timepicker" id="activation-time-to" class="active-to">
+                                              </div>
+                                          </div>
+                                      </div>
+                                    </td>
+                                </tr>
+                                <!-- NOTE-MAK: feature: activation-button, begin light scene in subview -->
+                                <tr class="activation-settings-time-row">
+                                    <td>
+                                        <div class="centered">
+                                            <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                            <img src="css/lib/images/Time.png" alt="Time">
+                                        </div>
+                                        <div class="centered">Light Scene</div>
+                                    </td>
+                                    <td>
+                                        <div class="centered general-ls-container">
+                                            <div id="ls-general-zone" class="ls-icon"></div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- NOTE-MAK: feature: activation-button, end light scene in subview -->
+                                <!-- NOTE-MAK: feature: activation-button, begin brightness in subview -->
+                                <tr class="activation-settings-time-row">
+                                    <td>
+                                        <div class="centered">
+                                            <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                            <img src="css/lib/images/Time.png" alt="Time">
+                                        </div>
+                                        <div class="centered">Brightness</div>
+                                    </td>
+                                    <td>
+                                        <div class="centered">
+                                            <input type="range" name="default-brightness-slider-general" id="default-brightness-slider-general" class="dh-slider default-brightness-slider" value="100" min="0" max="100" step="1">
+                                        </div>
+                                        <div class="slider-label-container brightness-slider-label-container centered">
+                                            <span>0</span>
+                                            <span class="default-brightness-value"></span>
+                                            <span>100</span>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <!-- NOTE-MAK: feature: activation-button, end brightness in subview -->
+                                <tr class="activation-settings-occupancy-row">
+                                    <td>
+                                        <div class="centered">
+                                            <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                        </div>
+                                        <div class="centered">Occupancy</div>
+                                    </td>
+                                    <td>
+                                      <div class="fieldset occupancy-general">
+                                          <label for="manual-on-checkbox-general"  class="manual-disabled">Manual On</label>
+                                          <input type="checkbox" class="ui-checkbox" id="manual-on-checkbox-general">
+                                      </div>
+                                      <div class="fieldset occupancy-general">
+                                          <label for="timeout-checkbox-general" class="timeout-disabled">Timeout
+                                              <br>
+                                              <input type="text" class="occupancy-timeout-general" id="occupancy-timeout-duration-general">
+                                          </label>
+                                          <input type="checkbox" class="ui-checkbox" id="timeout-checkbox-general">
+                                          <label for="fadeout-checkbox-general" class="fadeout-disabled">Fadeout
+                                              <br>
+                                              <input type="text" class="occupancy-fadeout-general" id="occupancy-fadeout-duration-general">
+                                          </label>
+                                          <input type="checkbox" class="ui-checkbox" id="fadeout-checkbox-general">
+                                      </div>
+                                  </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div class="centered">
+                                            <img src="css/lib/images/DaylightHarvesting.png" alt="DH">
+                                        </div>
+                                        <div class="centered">Daylight</div>
+                                        <div class="centered">Harvesting</div>
+                                    </td>
+                                    <td class="dh-settings-cell"></td>
+                                </tr>
+                            </table>
+                        </div>
+                            <!-- <button class="close-modal close-activation-settings">Done</button> -->
+                    </div>
+                    <h5 class="orientation-heading">Orientation</h5>
+                    <div class="centered">
+                        <div class="orientation-container"></div>
+                    </div>
+                <div class="smartDrag-checkBox">
+                    <input type="checkbox" id="smartDragFeature-general" name="smartDrag" value=false>
+                    <label for="smartDragFeature-general">Enable Smart Select Drag</label>
+                </div>
+                    <!-- NOTE-MAK: feature: activation-button, brightness moved to subview -->
+                    <!--                     <h5>Default Brightness</h5>
+                    <div class="centered">
+                        <input type="range" name="default-brightness-slider-general" id="default-brightness-slider-general" class="dh-slider default-brightness-slider" value="100" min="0" max="100" step="1">
+                    </div>
+                    <div class="slider-label-container brightness-slider-label-container centered">
+                        <span>0</span>
+                        <span class="default-brightness-value"></span>
+                        <span>100</span>
+                    </div> -->
+                </div>
+                <!-- NOTE: Kalesh DT-58 Beacon Support -->
+                <div id="beacon" class="tabContent">
+                    <h4 class="tab-heading">Utility Zones</h4>
+                    <div class="centered zone-name-container">
+                        <h4>Zone Name</h4>
+                        <input type="text" class="zone-name" />
+                    </div>
+                    <h4 class="beacon-zone-type-heading">Utility Zones</h4>
+                    <div class="zone-container">
+                        <div class="equi-container">
+
+                            <div class="button-w-caption">
+                                <input type="radio" name="beacon-zone-type" id="zone-beacon-information" class="type-radio" value="Information">
+                                <label for="zone-beacon-information">Beacon</label>
+                            </div>
+                            <div class="button-w-caption">
+                                <input type="radio" name="beacon-zone-type" id="zone-beacon-shades" class="type-radio" value="Shades">
+                                <label for="zone-beacon-shades">Blind</label>
+                            </div>
+                        </div>
+                        <div class="equi-container">
+                            <!-- <div class="button-w-caption">
+                                <input type="radio" name="beacon-zone-type" id="zone-beacon-status" class="type-radio" value="Status">
+                                <label for="zone-beacon-breakout">Status</label>
+                            </div> -->
+                            <div class="button-w-caption">
+
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <h5>Schedules</h5>
+
+                    <!-- NOTE-MAK: added schedule button. -->
+                        <div class="activations-container">
+                            <div class="equi-container">
+                                <div class="button-w-caption activation">
+                                    <button name="activation-time-beacon" id="activation-time-beacon" class="activation-checkbox activation-time"></button>
+                                </div>
+                            </div>
+
+                            <!-- NOTE-MAK: jquery-ui tabs component -->
+                            <!-- WARN-MAK: there is a conflict with ambx ID "tabs" -->
+                            <div class="activation-settings" id="activation-beacon" hidden>
+                                    <!-- <div class="hide-this">^</div>
+                                    <header class="dialog-header">Activation</header> -->
+                                    <div id="beacon-schedule-tab">
+                                        <div class="hide-this">^</div>
+                                        <header class="dialog-header">Activation</header>
+                                        <div id="dialog-beacon" title="Add Schedule">
+                                            <form>
+                                                <fieldset class="ui-helper-reset">
+                                                    <label for="tab_title_beacon">Name</label>
+                                                    <input type="text" name="tab_title" id="tab_title_beacon" value="" class="ui-widget-content ui-corner-all">
+                                                </fieldset>
+                                            </form>
+                                        </div>
+                                        <ul id='beacon-schedule'>
+                                            <li><a href="#tabs-1">default</a></li>
+                                            <li id='plus-beacon-1'>
+                                                <button class="schedule-button" id="add_tab_beacon"><span class='ui-icon ui-icon-plus' role='presentation'></span></button>
+
+                                            </li>
+                                        </ul>
+
+                                        <table>
+                                            <tr>
+                                                <th>Activations</th>
+                                                <th>Settings</th>
+                                            </tr>
+                                            <tr class="activation-settings-time-row">
+                                                <td>
+                                                    <div class="centered">
+                                                        <img src="css/lib/images/Time.png" alt="Time">
+                                                    </div>
+                                                    <div class="centered">Time</div>
+                                                </td>
+                                                <td>
+                                                  <div id="time_schedule_beacon" style="display:none">
+                                                    <div class="equi-container">
+                                                        <label for="timeout-date_from">At Time</label>
+                                                    </div>
+                                                    <div class="fieldset occupancy equi-container">
+                                                        <div class="equi-container">
+                                                            <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                            <input type="text" class="timepicker" id="time_start_schedule_beacon">
+                                                        </div>
+                                                    </div>
+                                                  </div>
+                                                  <div  id="time_default_beacon">
+                                                    <div class="equi-container">
+                                                        <label for="timeout-date_from">Start Time</label>
+                                                        <label for="timeout-date_from">End Time</label>
+                                                    </div>
+                                                    <div class="fieldset occupancy equi-container">
+                                                        <div class="equi-container">
+                                                            <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                            <input type="text" class="timepicker" id="time_start_beacon">
+                                                        </div>
+                                                        <div class="equi-container">
+                                                            <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                            <input type="text" class="timepicker" id="time_end_beacon">
+                                                        </div>
+                                                    </div>
+                                                  </div>
+                                                </td>
+                                                <!-- NOTE-MAK: removing amBX time fields -->
+                                                <!-- <td class="activation-time-cell"></td> -->
+                                            </tr>
+                                            <!-- NOTE-MAK: feature: activation-button, moved lightscene to schedule subview -->
+                                            <tr class="activation-settings-time-row">
+                                                <td>
+                                                    <div class="centered">
+                                                        <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                                        <img src="css/lib/images/Time.png" alt="Time">
+                                                    </div>
+                                                    <div class="centered">Light Scenes</div>
+                                                </td>
+                                                <td>
+                                                    <div class="light-scene-container" id="color-ls">
+                                                        <input type="checkbox" name="available-lightscene-beacon" id="ls-oneColour" value="oneColour" mood="red" class="available-lightscene">
+                                                        <input type="radio" name="default-lightscene-beacon" id="default-ls-oneColour" class="default-lightscene" value="oneColour">
+                                                        <label for="ls-oneColour" class="available-ls-label-beacon"></label><br>
+                                                        <!-- <input type="checkbox" name="available-lightscene-user" id="ls-personal" value="personal" mood="vigilant" class="available-lightscene">
+                                                        <input type="radio" name="default-lightscene-user" id="default-ls-personal" class="default-lightscene" value="personal">
+                                                        <label for="ls-personal" class="available-ls-label"></label> -->
+                                                    </div>
+
+                                                </td>
+                                            </tr>
+                                            <!-- NOTE-MAK: feature: activation-button, end light scene in subview -->
+                                            <!-- NOTE-MAK: feature: activation-button, moved brightness to schedule subview -->
+                                            <tr class="activation-settings-time-row">
+                                                <td>
+                                                    <div class="centered">
+                                                        <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                                        <img src="css/lib/images/Time.png" alt="Time">
+                                                    </div>
+                                                    <div class="centered">Brightness</div>
+                                                </td>
+                                                <td>
+                                                    <div class="centered">
+                                                        <input type="range" name="default-brightness-slider-beacon" id="default-brightness-slider-beacon" class="dh-slider default-brightness-slider" value="100" min="0" max="100" step="1">
+                                                    </div>
+                                                    <div class="slider-label-container brightness-slider-label-container centered">
+                                                        <span>0</span>
+                                                        <span class="default-brightness-value"></span>
+                                                        <span>100</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            <!-- NOTE-MAK: feature: activation-button, end brightness in subview -->
+                                            <tr class="activation-settings-occupancy-row">
+                                                <td>
+                                                    <div class="centered">
+                                                        <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                    </div>
+                                                    <div class="centered">Occupancy</div>
+                                                </td>
+                                                    <td>
+                                                    <!-- NOTE start: commented by prakash  - work in progress > -->
+                                                    <!-- <div class="fieldset occupancy">
+                                                        <label for="manual-on-checkbox">
+                                                        Manual On
+                                                        </label>
+                                                        <input type="checkbox" class="ui-checkbox" id="manual-on-checkbox">
+                                                    </div> -->
+                                                    <!-- <div class="fieldset occupancy">
+                                                        <label for="timeout-checkbox">Timeout
+                                                            <br>
+                                                            <input type="text" class="occupancy-timeout" id="occupancy-timeout-duration">
+                                                        </label>
+                                                        <input type="checkbox" class="ui-checkbox" id="timeout-checkbox">
+                                                        <label for="fadeout-checkbox">Fadeout
+                                                            <br>
+                                                            <input type="text" class="occupancy-fadeout" id="occupancy-fadeout-duration">
+                                                        </label>
+                                                        <input type="checkbox" class="ui-checkbox" id="fadeout-checkbox">
+                                                    </div> -->
+                                                    <!-- NOTE end: commented by prakash  - work in progress > -->
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="centered">
+                                                        <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                        </div>
+                                                        <div class="centered">Count</div>
+                                                     </td>
+                                                     <td>
+                                                        <!-- <input type="text" class="" id="count_start" placeholder="5"> -->
+                                                     </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="centered">
+                                                        <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                        </div>
+                                                        <div class="centered">Frequency</div>
+                                                     </td>
+                                                     <td>
+                                                        <!-- <input type="text" class="" id="frequency-start" placeholder="10"> -->
+                                                     </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="centered">
+                                                        <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                        </div>
+                                                        <div class="centered">Behaviour</div>
+                                                    </td>
+                                                    <td>
+                                                      <!-- <div class="fieldset occupancy">
+                                                          <label>
+                                                          Warn
+                                                          </label>
+                                                          <input type="checkbox">
+                                                      </div>
+                                                      <div class="fieldset occupancy">
+                                                          <label for="warn-checkbox">Timeout</label>
+                                                          <input type="checkbox">
+                                                          <label>Off</label>
+                                                          <input type="checkbox">
+                                                      </div> -->
+                                                    </td>
+                                                </tr>
+                                                <!-- <tr>
+                                                    <td>
+                                                        <div class="centered">
+                                                        <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                        </div>
+                                                        <div class="centered">Colour</div>
+                                                     </td>
+                                                     <td>
+                                                     <input type="color" id="myColor" value="#ff0080">
+                                                     </td>
+                                                </tr> -->
+
+
+                                        </table>
+                                        <!-- <button class="close-modal close-activation-settings">Done</button> -->
+                                        <!-- </div> -->
+                                        <!-- NOTE-MAK: moving schedule entry from tab -->
+                                    </div>
+                            </div>
+                                <!-- NOTE-MAK: end tabs-1 -->
+                        </div>
+                        <!-- NOTE-MAK: end activation-user (scheduler subview) -->
+                        <h5 class="orientation-heading">Orientation</h5>
+                        <div class="centered">
+                            <div class="orientation-container"></div>
+                        </div>
+                    <div class="smartDrag-checkBox">
+                        <input type="checkbox" id="smartDragFeature-beacon" name="smartDrag" value=false>
+                        <label for="smartDragFeature-beacon">Enable Smart Select Drag</label>
+                    </div>
+                    </div>
+
+                   <div id="user" class="tabContent">
+                      <h4 class="tab-heading">User Zones</h4>
+                      <div class="centered zone-name-container">
+                          <h4>Zone Name</h4>
+                          <input type="text" class="zone-name" />
+                      </div>
+                      <h4>Office Zones</h4>
+                      <div class="zone-container">
+                          <div class="equi-container">
+                              <div class="button-w-caption">
+                                  <input type="radio" name="user-zone-type" id="zone-user-desk" class="type-radio" value="Desk">
+                                  <label for="zone-user-desk">Desk</label>
+                              </div>
+                              <div class="button-w-caption">
+                                  <input type="radio" name="user-zone-type" id="zone-user-meeting" class="type-radio" value="Meeting">
+                                  <label for="zone-user-meeting">Meeting</label>
+                              </div>
+                          </div>
+                          <div class="equi-container">
+                              <div class="button-w-caption">
+                                  <input type="radio" name="user-zone-type" id="zone-user-breakout" class="type-radio" value="Breakout">
+                                  <label for="zone-user-breakout">Breakout</label>
+                              </div>
+                              <div class="button-w-caption">
+                                  <input type="radio" name="user-zone-type" id="zone-user-lab" class="type-radio" value="Lab">
+                                  <label for="zone-user-lab">Lab</label>
+                              </div>
+                          </div>
+                      </div>
+
+                      <h5>Schedules</h5>
+                      <!-- <h5>Activations</h5> -->
+                      <!-- NOTE-MAK: added schedule button. -->
+                      <div class="activations-container" >
+                          <div class="equi-container">
+                              <div class="button-w-caption activation">
+                                  <button name="activation-time-user" id="activation-time-user" class="activation-checkbox activation-time"></button>
+                              </div>
+                          </div>
+                          <div class="activation-settings" id="activation-user" hidden>
+                                  <div id="user-schedule-tab">
+                                            <div class="hide-this">^</div>
+                                            <header class="dialog-header">Activation</header>
+                                            <!-- NOTE-MAK: adding button placeholder to add tabs -->
+                                            <div id="dialog" title="Add Schedule">
+                                                <form>
+                                                    <fieldset class="ui-helper-reset">
+                                                        <label for="tab_title">Name</label>
+                                                        <input type="text" name="tab_title" id="tab_title" value="" class="ui-widget-content ui-corner-all">
+                                                    </fieldset>
+                                                </form>
+                                            </div>
+                                            <ul id='user-schedule'>
+                                                <li><a href="#tabs-1">default</a></li>
+                                                <li id='plus-1'>
+                                                    <!-- <a href='#tabs-0'> -->
+                                                    <button class="schedule-button" id="add_tab"><span class='ui-icon ui-icon-plus' role='presentation'></span></button>
+                                                    <!-- </a> -->
+                                                </li>
+                                            </ul>
+                                            <!-- <div id="tabs-1"></div> -->
+                                            <table id="updateScheduleTable">
+                                                <tr>
+                                                    <th>Activations</th>
+                                                    <th>Settings</th>
+                                                </tr>
+                                                <tr class="activation-settings-time-row">
+                                                    <td>
+                                                        <div class="centered">
+                                                            <img src="css/lib/images/Time.png" alt="Time">
+                                                        </div>
+                                                        <div class="centered">Time</div>
+                                                    </td>
+                                                    <td>
+                                                        <!-- NOTE-MAK: added start and end time pickadate fields -->
+                                                        <div id="time_schedule" style="display:none">
+                                                          <div class="equi-container">
+                                                              <label for="timeout-date_from">At Time</label>
+                                                          </div>
+                                                          <div class="fieldset occupancy equi-container">
+                                                              <div class="equi-container">
+                                                                  <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                                  <input type="text" class="timepicker" id="time_start_schedule">
+                                                              </div>
+                                                          </div>
+                                                        </div>
+                                                        <div  id="time_default">
+                                                          <div class="equi-container">
+                                                              <label for="timeout-date_from">Start Time</label>
+                                                              <label for="timeout-date_from">End Time</label>
+                                                          </div>
+                                                          <div class="fieldset occupancy equi-container">
+                                                              <div class="equi-container">
+                                                                  <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                                  <input type="text" class="timepicker" id="time_start">
+                                                              </div>
+                                                              <div class="equi-container">
+                                                                  <img src="css/lib/images/TimeSmallActivationsMenu.png" alt="Time">
+                                                                  <input type="text" class="timepicker" id="time_end">
+                                                              </div>
+                                                          </div>
+                                                        </div>
+                                                    </td>
+                                                    <!-- NOTE-MAK: removing amBX time fields -->
+                                                    <!-- <td class="activation-time-cell"></td> -->
+                                                </tr>
+                                                <!-- NOTE-MAK: feature: activation-button, moved lightscene to schedule subview -->
+                                                <tr class="activation-settings-time-row">
+                                                    <td>
+                                                        <div class="centered">
+                                                            <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                                            <img src="css/lib/images/Time.png" alt="Time">
+                                                        </div>
+                                                        <div class="centered">Light Scenes</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="light-scene-container">
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-personal" value="personal" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-personal" class="default-lightscene" value="personal">
+                                                            <label for="ls-personal" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-speaker" value="speaker" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-speaker" class="default-lightscene" value="speaker">
+                                                            <label for="ls-speaker" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-daylight" value="daylight" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-daylight" class="default-lightscene" value="daylight">
+                                                            <label for="ls-daylight" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-orbit" value="orbit" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-orbit" class="default-lightscene" value="orbit">
+                                                            <label for="ls-orbit" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-meeting" value="meeting" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-meeting" class="default-lightscene" value="meeting">
+                                                            <label for="ls-meeting" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-creative" value="creative" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-creative" class="default-lightscene" value="creative">
+                                                            <label for="ls-creative" class="available-ls-label"></label>
+                                                            <input type="checkbox" name="available-lightscene-user" id="ls-video" value="video" mood="vigilant" class="available-lightscene">
+                                                            <input type="radio" name="default-lightscene-user" id="default-ls-video" class="default-lightscene" value="video">
+                                                            <label for="ls-video" class="available-ls-label"></label>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- NOTE-MAK: feature: activation-button, end light scene in subview -->
+                                                <!-- NOTE-MAK: feature: activation-button, moved brightness to schedule subview -->
+                                                <tr class="activation-settings-time-row">
+                                                    <td>
+                                                        <div class="centered">
+                                                            <!-- NOTE-MAK: feature: activation-button, placeholder image -->
+                                                            <img src="css/lib/images/Time.png" alt="Time">
+                                                        </div>
+                                                        <div class="centered">Brightness</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="centered">
+                                                            <input type="range" name="default-brightness-slider-general" id="default-brightness-slider-general" class="dh-slider default-brightness-slider" value="100" min="0" max="100" step="1">
+                                                        </div>
+                                                        <div class="slider-label-container brightness-slider-label-container centered">
+                                                            <span>0</span>
+                                                            <span class="default-brightness-value"></span>
+                                                            <span>100</span>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- NOTE-MAK: feature: activation-button, end brightness in subview -->
+                                                <tr class="activation-settings-occupancy-row">
+                                                    <td>
+                                                        <div class="centered">
+                                                            <img src="css/lib/images/Occupancy.png" alt="Occupancy">
+                                                        </div>
+                                                        <div class="centered">Occupancy</div>
+                                                    </td>
+                                                    <!-- NOTE-MAK: removed old occupancy -->
+                                                    <!-- <td class="occupancy-settings-cell">
+                                                    </td> -->
+                                                    <td>
+                                                        <div class="fieldset occupancy">
+                                                            <label for="manual-on-checkbox" class="manual-disabled">
+                                                            <!-- <input type="checkbox"> -->
+                                                            Manual On
+                                                            </label>
+                                                            <input type="checkbox" class="ui-checkbox" id="manual-on-checkbox">
+                                                        </div>
+                                                        <div class="fieldset occupancy">
+                                                            <label for="timeout-checkbox"  class="timeout-disabled">Timeout
+                                                                <br>
+                                                                <input type="text" class="occupancy-timeout" id="occupancy-timeout-duration">
+                                                            </label>
+                                                            <input type="checkbox" class="ui-checkbox" id="timeout-checkbox">
+                                                            <label for="fadeout-checkbox"  class="fadeout-disabled">Fadeout
+                                                                <br>
+                                                                <input type="text" class="occupancy-fadeout" id="occupancy-fadeout-duration">
+                                                            </label>
+                                                            <input type="checkbox" class="ui-checkbox" id="fadeout-checkbox">
+                                                        </div>
+                                                        <!-- TEST-MAK: pickadate.js dependency -->
+                                                        <!--   <fieldset>
+                                                            <input type="text" class="occupancy-timeout" id="occupancy-timeout-duration">
+                                                            <input type="text" class="occupancy-fadeout" id="occupancy-fadeout-duration">
+                                                        </fieldset> -->
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="centered">
+                                                            <img src="css/lib/images/DaylightHarvesting.png" alt="DH">
+                                                        </div>
+                                                        <div class="centered">Daylight</div>
+                                                        <div class="centered">Harvesting</div>
+                                                    </td>
+                                                    <td class="dh-settings-cell"></td>
+                                                </tr>
+                                                <tr>
+                                                    <td>
+                                                        <div class="centered_">Circadian Rhythm</div>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fieldset cicedium-cycle">
+                                                            <!-- <label for="cicadium-cycle-checkbox" class="cicadium-disabled"> -->
+                                                            <label for="cicadium-cycle-checkbox" id="lableToChange">
+                                                                <!-- <input type="checkbox"> -->
+                                                                "Turn-OFF" Circadian Rhythm
+                                                            </label>
+                                                            <input type="checkbox" class="ui-checkbox" id="cicadium-cycle-checkbox">
+                                                        </div>
+
+                                                </tr>
+                                            </table>
+                                            <!-- <button class="close-modal close-activation-settings">Done</button> -->
+                                            <!-- </div> -->
+                                            <!-- NOTE-MAK: moving schedule entry from tab -->
+
+                                    </div>
+                              <!-- NOTE-MAK: end tabs-1 -->
+                          </div>
+                      </div>
+                      <!-- NOTE-MAK: end activation-user (scheduler subview) -->
+                      <h5 class="orientation-heading">Orientation</h5>
+                      <div class="centered">
+                          <div class="orientation-container"></div>
+                      </div>
+                      <!-- <div class="smartDrag-checkBox">
+                          <input type="checkbox" id="smartDragFeature" name="smartDrag" value=false>
+                          <label for="smartDragFeature">Enable Smart Select Drag</label>
+                      </div> -->
+                      <div class="smartDrag-checkBox">
+                          <input type="checkbox" id="smartDragFeature-user" name="smartDrag" value=false>
+                          <label for="smartDragFeature-user">Enable Smart Select Drag</label>
+                      </div>
+                    </div>
+                </div>
+                <footer id="main-window-footer">
+                    <div class="zoom-container">
+                        <span>Zoom: </span>
+                        <span id="zoom-value"></span><span>%</span>
+                    </div>
+                    <span id="app-version-number"></span>
+                    <select name="select-floor" id="select-floor" class="select-floor">
+                        <option value="test">Sample</option>
+                    </select>
+                </footer>
+                <!-- Project Settings Modal Dialog -->
+                <div class="modal" id="project-settings-modal" hidden>
+                    <div id="project-settings-dialog">
+                        <header class="dialog-header">Settings</header>
+                        <div class="project-settings-content">
+                            <div class="project-view project-menu-section">
+                                <div class="field-wrapper">
+                                    <div class="field name">Project Name</div>
+                                    <div class="field">
+                                        <input type="text" value="" id="project-name" data-object="project" data-propname="_name" />
+                                    </div>
+                                </div>
+                                <div class="field-wrapper">
+                                    <div class="field name">Project Customer</div>
+                                    <div class="field">
+                                        <input type="text" value="" id="project-customer" data-object="project" data-propname="_client" />
+                                    </div>
+                                </div>
+                                <div class="field-wrapper">
+                                    <div class="field name">Project Contact</div>
+                                    <div class="field">
+                                        <input type="text" value="" id="project-contact" data-object="project" data-propname="_contact" />
+                                    </div>
+                                </div>
+                                <!--<div class="field-wrapper">
+                <div class="field name">Project Lead</div>
+                <div class="field">
+                    <input type="text" value="" />
+                </div>
+            </div>-->
+                                <div class="field-wrapper">
+                                    <div class="field name">Project Status</div>
+                                    <div class="field">
+                                        <label for="project-status-alpha">In progress</label>
+                                        <input type="radio" class="button-radio-red" name="project-status" value="alpha" id="project-status-alpha" checked />
+                                        <label for="project-status-beta">Testing</label>
+                                        <input type="radio" class="button-radio-red" name="project-status" value="beta" id="project-status-beta" />
+                                        <label for="project-status-release">Final</label>
+                                        <input type="radio" class="button-radio-red" name="project-status" value="release" id="project-status-release" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="building-view project-menu-section">
+                                <!-- <hr /> -->
+                                <div class="field-wrapper">
+                                    <div class="field name">Building Name</div>
+                                    <div class="field">
+                                        <input type="text" id="building-name" value="" data-object="building" data-propname="_name" />
+                                    </div>
+                                </div>
+                                <div class="field-wrapper">
+                                    <div class="field name">Building Location</div>
+                                    <div class="field">
+                                        <input type="text" id="building-location" value="" data-object="building" data-propname="_location" />
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- <hr /> -->
+                            <!--<div class="field-wrapper">
+              <div class="field name">Floor Name</div>
+              <div class="field"><input type="text" value="" id="floor-name" /></div>
+            </div>
+            <hr />-->
+                            <div class="controller-view project-menu-section">
+                                <div class="field-wrapper">
+                                    <div class="field name">Controller Name</div>
+                                    <div class="field">
+                                        <input type="text" id="controller-name" value="" data-object="controller" data-propname="_name" />
+                                    </div>
+                                </div>
+                                <div class="field-wrapper">
+                                    <div class="field name">Controller IP</div>
+                                    <div class="field">
+                                        <div class="ip-input-container" id="controller-ip" data-object="controller">
+                                            <input type="number" name="ip-num-controller-1" id="ip-num-controller-1" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-controller-2" id="ip-num-controller-2" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-controller-3" id="ip-num-controller-3" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-controller-4" id="ip-num-controller-4" class="ip-num" min="0" max="255" maxlength="3">:
+                                            <input type="number" name="ip-port-controller" id="ip-port-controller" class="ip-port" min="0" max="65535" maxlength="5">
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- <div class="field">
+              <input type="text" id="controller-ip" value="" />
+            </div> -->
+                            </div>
+                            <!-- <hr /> -->
+                            <div class="device-start-ip-view project-menu-section">
+                                <div class="field-wrapper">
+                                    <div class="field name">Fixture Start Address</div>
+                                    <div class="field">
+                                        <div class="ip-input-container" id="fixture-start-ip" data-object="project">
+                                            <input type="number" name="ip-num-fixture-start-1" id="ip-num-fixture-start-1" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-fixture-start-2" id="ip-num-fixture-start-2" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-fixture-start-3" id="ip-num-fixture-start-3" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-fixture-start-4" id="ip-num-fixture-start-4" class="ip-num" min="0" max="255" maxlength="3">:
+                                            <input type="number" name="ip-port-fixture-start" id="ip-port-fixture-start" class="ip-port" min="0" max="65535" maxlength="5">
+                                        </div>
+                                    </div>
+                                    <!-- <div class="field">
+                <input type="text" id="fixture-start-ip" value="" />
+              </div> -->
+                                </div>
+                                <div class="field-wrapper">
+                                    <div class="field name">Sensor Start Address</div>
+                                    <div class="field">
+                                        <div class="ip-input-container" id="sensor-start-ip" data-object="project">
+                                            <input type="number" name="ip-num-sensor-start-1" id="ip-num-sensor-start-1" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-sensor-start-2" id="ip-num-sensor-start-2" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-sensor-start-3" id="ip-num-sensor-start-3" class="ip-num" min="0" max="255" maxlength="3">.
+                                            <input type="number" name="ip-num-sensor-start-4" id="ip-num-sensor-start-4" class="ip-num" min="0" max="255" maxlength="3">:
+                                            <input type="number" name="ip-port-sensor-start" id="ip-port-sensor-start" class="ip-port" min="0" max="65535" maxlength="5">
+                                        </div>
+                                    </div>
+                                    <!-- <div class="field">
+                <input type="text" id="sensor-start-ip" value="" />
+              </div> -->
+                                </div>
+                            </div>
+                            <!-- <hr /> -->
+                            <h4>Floor Plans</h4>
+                            <div class="floor-view-headings">
+                                <span>Del</span><span>View</span>
+                            </div>
+                            <div class="floor-list-view"></div>
+                            <div class="centered add-floor-item">
+                                <label for="add-floor-btn" class="add-floor-label">Add Floor</label>
+                                <button class="add-floor-btn" id="add-floor-btn"></button>
+                            </div>
+                            <div class="copy-floor-item">
+                                <div class="field-wrapper">
+                                    <div class="field name"><span class="copy-floor-label">Copy Floor :</span></div>
+                                    <div class="field">
+                                        <select id="copy-fixture-select" name="protocol" class="copy-fixture-select">
+                                            <option value=""></option>
+                                        </select>
+                                        <button class="paste-floor-btn" id="paste-floor-btn" disabled="disabled">paste</button>
+                                    </div>
+                                </div>
+                            <!-- <hr /> -->
+                            <div class="centered">
+                                <button id="project-settings-done" class="close-modal">Done</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Floor Settings Modal -->
+                <div class="modal grid-settings-modal" id="floor-settings" hidden="hidden">
+                    <div id="floor-settings-dialog" class="grid-settings-dialog">
+                        <header class="dialog-header">Floor</header>
+                        <div class="field-wrapper">
+                            <div class="field name">Grid Width</div>
+                            <div class="field">
+                                <input type="number" name="grid-w" id="grid-w" class="input-grid-width" min="0" />
+                            </div>
+                        </div>
+                        <div class="field-wrapper">
+                            <div class="field name">Grid Height</div>
+                            <div class="field">
+                                <input type="number" name="grid-h" id="grid-h" class="input-grid-height" min="0" />
+                            </div>
+                        </div>
+                        <hr />
+                        <div class="centered">
+                            <button id="floor-settings-done" class="close-modal">Done</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--Default Grid Size for new projects-->
+            <div class="modal grid-settings-modal" id="default-grid-settings" hidden="hidden">
+                <div id="default-grid-settings-dialog" class="grid-settings-dialog">
+                    <header class="dialog-header">Default Grid Size</header>
+                    <div class="field-wrapper">
+                        <div class="field name">Grid Width</div>
+                        <div class="field">
+                            <input type="number" name="grid-w" id="grid-w" class="input-grid-width" min="0" />
+                        </div>
+                    </div>
+                    <div class="field-wrapper">
+                        <div class="field name">Grid Height</div>
+                        <div class="field">
+                            <input type="number" name="grid-h" id="grid-h" class="input-grid-height" min="0" />
+                        </div>
+                    </div>
+                    <hr />
+                    <div class="centered">
+                        <button id="default-grid-settings-done" class="close-modal">Done</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- NOTE-MAK: placeholder to activate scheduler tabs -->
+        <script>
+        </script>
+</body>
+
+</html>
