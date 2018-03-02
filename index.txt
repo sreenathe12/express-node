@@ -1,0 +1,5137 @@
+/*******************************************************************************
+ *
+  Transcend Application Source File
+
+  Company:
+    Molex, LLC
+  Summary:
+    This file contains the source code for the Design Tool application script.
+
+  COPYRIGHT (C) 2016 Molex - All Rights Reserved
+
+*******************************************************************************/
+
+'use strict'
+
+// Modules
+var gui = require('nw.gui'),
+    win = gui.Window.get(),
+    os = require('os'),
+    proc = require('process'),
+    path = require('path'),
+    fs = require('fs-extra'),
+    main = process.mainModule.exports,
+    pjson = require('../../package.json'),
+    STATE_PATH = '../',
+    DEFAULT_FLOOR_PLAN = './images/Molex_DefaultPlan4.png',
+    fixtureContextMenu, sensorContextMenu, zoneContextMenu
+/**
+ * Stores information about mouse state.
+ * @type  {Object}
+ */
+var mouse = {
+    x: 0,
+    y: 0,
+    gridX: -1,
+    gridY: -1,
+    mouseDown: {
+        x: 0,
+        y: 0,
+        gridX: -1,
+        gridY: -1
+    },
+    isLeftButtonDown: false,
+    isMiddleButtonDown: false,
+    isDragging: false
+}
+
+var oldSpaceMap = {
+    map: {},
+    spaceType: '',
+    spaceId:''
+}
+
+var oldDeviceMap = {
+    name:'',
+    gridX : '',
+    gridY: '',
+    view:''
+}
+
+var isSearchModeEnabled = false;
+var copiedSpace = []
+var copiedRefSpace =null;
+var isViewChanged = false;
+
+/**
+ * Fill styles for rendering devices.
+ * @type {Object}
+ */
+var deviceStyles = {
+    // Fixtures
+    Ambient: 'rgb(255, 0, 0)',
+    Task: 'rgb(0, 59, 146)',
+    Accent: 'rgb(0, 133, 163)',
+    // Sensors
+    AL: '#07913D',
+    AQ: '#F39200',
+    PIR: '#662483',
+    CT: '#3B83C1',
+    PW: '#C60018',
+    SW: '#E94403',
+    TEMP: '#ff99cc', // NOTE-KAMLESH: Issue DT-30,DT-32 - Added TEMP & HUM.
+    HUM: '#66ccff'
+}
+
+/**
+ * Styles for rendering different space types. Includes fill, stroke, and color stops for color gradients
+ * @type  {Object}
+ */
+var spaceStyles = {
+    'Default': {
+        fill: 'rgba(255, 180, 180, 0.6)',
+        stroke: ''
+    },
+    'RR': {
+        fill: 'rgb(156, 0, 197)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(156, 0, 197)'
+        },
+        stroke: ''
+    },
+    'Stairs': {
+        fill: 'rgb(41, 171, 226)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(41, 171, 226)'
+        },
+        stroke: ''
+    },
+    'Aisle': {
+        fill: 'rgb(46, 49, 116)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(46, 49, 116)'
+        },
+        stroke: ''
+    },
+    'Exit': {
+        fill: 'rgb(57, 181, 74)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(57, 181, 74)'
+        },
+        stroke: ''
+    },
+    'Elevator': {
+        fill: 'rgb(255, 113, 34)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(255, 113, 34)'
+        },
+        stroke: ''
+    },
+    'Cafeteria': {
+        fill: 'rgb(255, 206, 0)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(255, 206, 0)'
+        },
+        stroke: ''
+    },
+    'Lobby': {
+        fill: 'rgb(212, 0, 5)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(212, 0, 5)'
+        },
+        stroke: ''
+    },
+    'Feature': {
+        fill: 'rgb(13, 201, 195)',
+        colorStops: {
+            0: 'white',
+            0.5: 'rgb(13, 201, 195)'
+        },
+        stroke: ''
+    },
+    'Desk': {
+        fill: '#25A6CA',
+        colorStops: {
+            0: 'rgba(0, 161, 154, 0)',
+            0.5: 'rgb(0, 161, 154)',
+            1: 'rgb(54, 169, 225)'
+        },
+        stroke: '#4D4D4D'
+    },
+    'DeskCustom': {
+        fill: '#25A6CA',
+        colorStops: {
+            0: 'white',
+            1: '#25A6CA'
+        },
+        stroke: '#4D4D4D'
+    },
+    'Meeting': {
+        fill: '#6A2B84',
+        colorStops: {
+            0: 'rgba(231, 29, 115, 0)',
+            0.5: 'rgb(231, 29, 115)',
+            1: 'rgb(102, 36, 131)'
+        },
+        stroke: '#DF1D74'
+    },
+    'MeetingCustom': {
+        fill: '#6A2B84',
+        colorStops: {
+            0: 'white',
+            1: '#6A2B84'
+        },
+        stroke: '#DF1D74'
+    },
+    'Breakout': {
+        fill: '#FEE800',
+        colorStops: {
+            0: 'rgba(243, 146, 0, 0)',
+            0.5: 'rgb(243, 146, 0)',
+            1: 'rgb(255, 237, 0)'
+        },
+        stroke: '#D1963A'
+    },
+    'BreakoutCustom': {
+        fill: '#FEE800',
+        colorStops: {
+            0: 'white',
+            1: '#FEE800'
+        },
+        stroke: '#D1963A'
+    },
+    'Lab': {
+        fill: '#290FF9',
+        colorStops: {
+            0: 'rgba(21, 179,255, 0)',
+            0.5: 'rgb(21, 179, 255)',
+            1: 'rgb(33, 0, 255)'
+        },
+        stroke: '#4FAAD9'
+    },
+    'LabCustom': {
+        fill: '#290FF9',
+        colorStops: {
+            0: 'white',
+            1: '#290FF9'
+        },
+        stroke: '#4FAAD9'
+    },
+    'Shades': {
+        fill: '#28a228',
+        colorStops: {
+            0: 'white',
+            1: '#28a228'
+        },
+        stroke: '#C6DFC6'
+    },
+    'Information': {
+        fill: '#FEE800',
+        colorStops: {
+            0: 'white',
+            1: '#FEE800'
+        },
+        stroke: '#D1963A'
+    },
+    'Status': {
+        fill: '#6A2B84',
+        colorStops: {
+            0: 'rgba(231, 29, 115, 0)',
+            0.5: 'rgb(231, 29, 115)',
+            1: 'rgb(102, 36, 131)'
+        },
+        stroke: '#DF1D74'
+    }
+}
+
+/**
+ * Singleton for drawing stuff to the canvas.
+ * @class renderer
+ */
+var renderer = {
+    /**
+     * The main canvas object
+     *
+     * @memberof renderer
+     * @type {HTMLCanvasElement}
+     */
+    canvas: undefined,
+    /**
+     * The main 2d canvas rendering context
+     *
+     * @memberof  renderer
+     * @type {CanvasRenderingContext2D}
+     */
+    context: undefined,
+    /**
+     * Bool to check if renderer is ready to draw stuff, ie all objects and images are loaded.
+     *
+     * @memberof  renderer
+     * @type  {boolean}
+     */
+    isReady: false,
+    /**
+     * Coefficient used for adjusting scale change when zooming
+     *
+     * @memberof  renderer
+     * @type  {number}
+     */
+    scaleFactor: 0.001,
+    /**
+     * Minimum scale value
+     *
+     * @memberof  renderer
+     * @type  {number}
+     */
+    scaleMin: 0.01,
+    /**
+     * Maximum scale value
+     *
+     * @memberof  renderer
+     * @type {number}
+     */
+    scaleMax: 2,
+    /**
+     * Current canvas transform: tracks the x and y displacement as well as the scale
+     *
+     * @memberof  renderer
+     * @type {Object}
+     */
+    transform: {
+        scale: 0.5,
+        moveX: 0,
+        moveY: 0
+    },
+    /**
+     * Floor canvas object
+     *
+     * @memberof  renderer
+     * @type {HTMLCanvasElement}
+     */
+    floorCanvas: undefined,
+    /**
+     * Current floor plan image
+     *
+     * @memberof  renderer
+     * @type {Image}
+     */
+    floorImage: undefined,
+    /**
+     * Canvas object for the printable view
+     *
+     * @memberof  renderer
+     * @type  {HTMLCanvasElement}
+     */
+    printCanvas: undefined,
+    /**
+     * Keeps track of the geometric properties and rendering context of the grid over the current floor plan
+     *
+     * @memberof  renderer
+     * @type  {Object}
+     */
+    grid: {
+        /**
+         * Canvas for the grid
+         * @memberof  renderer
+         * @type {HTMLCanvasElement}
+         */
+        canvas: undefined,
+        /**
+         * Grid canvas rendering context
+         * @memberof  renderer
+         * @type {CanvasRenderingContext2D}
+         */
+        context: undefined,
+        /**
+         * The size of a grid square in pixels
+         * @memberof  renderer
+         * @type {number}
+         */
+        cell: 10,
+        /**
+         * Adjusts the grid dimensions to fit over the specified image and redraws the grid
+         * @memberof renderer.grid
+         * @param {HTMLImageElement|HTMLCanvasElement} image - The image object.
+         * @param {number} scale - The scale applied to the image
+         */
+        adjust: function(image, scale) {
+            var floor = main.getCurrentFloor()
+            var floorGridW = floor._gridW
+            var floorGridH = floor._gridH
+            var scaledWidth = image.width * scale
+            var scaledHeight = image.height * scale
+            this.cell = Math.max(scaledWidth / floorGridW, scaledHeight /
+                floorGridH)
+            this.canvas.width = floorGridW * this.cell + 1
+            this.canvas.height = floorGridH * this.cell + 1
+            this.redraw(floorGridW, floorGridH)
+        },
+        /**
+         * Redraws the grid
+         * @memberof  renderer.grid
+         * @param {number} numCellsX - Number of cells along the x-axis
+         * @param {number} numCellsY - Number of cells along the y-axis
+         */
+        redraw: function(numCellsX, numCellsY) {
+            var iX = 0
+            var iY = 0
+            var cell = this.cell
+            var pixWidth = this.canvas.width
+            var pixHeight = this.canvas.height
+            var ctx = this.context
+            ctx.save()
+            ctx.strokeStyle = '#aaa'
+            while (iX <= numCellsX) {
+                ctx.moveTo(iX * cell, 0)
+                ctx.lineTo(iX * cell, pixHeight)
+                iX += 1
+            }
+            while (iY <= numCellsY) {
+                ctx.moveTo(0, iY * cell)
+                ctx.lineTo(pixWidth, iY * cell)
+                iY += 1
+            }
+            ctx.stroke()
+            ctx.restore()
+        }
+    },
+    /**
+     * Initialises the renderer: creates all relevant canvas elements and renderering contexts, then loads the floorplan
+     * @memberof renderer
+     */
+    init: function () {
+        var self = this
+        var boundingRect
+        this.canvas = document.getElementById('main')
+        boundingRect = this.canvas.getBoundingClientRect()
+        this.canvas.width = $('#canvas-container')
+            .width()
+        this.canvas.height = $('#canvas-container')
+            .height()
+        this.context = this.canvas.getContext('2d')
+        this.grid.canvas = document.createElement('canvas')
+        this.grid.context = this.grid.canvas.getContext('2d')
+        this.floorCanvas = document.createElement('canvas')
+        this.printCanvas = document.createElement('canvas')
+        this.loadCurrentFloor()
+    },
+    /**
+     * A 2d point
+     * @typedef {Object} Point2D
+     * @property {number} x - X-coordinate
+     * @property {number} y - Y-coordinate
+     */
+    /**
+     * Finds the coordinates of the grid square containing the given pixel coordinates
+     * @memberof  renderer
+     * @param {number} clientX - The pixel x-coord with respect to the main renderer viewport (not the window)
+     * @param {number} clientY - The pixel y-coord with respect to the main renderer viewport (not the window)
+     * @returns {Point2D} The grid coords if the point is on the grid, {x: -1, y: -1} otherwise
+     */
+    getGridCoords: function (clientX, clientY) {
+        var result = {
+            x: -1,
+            y: -1
+        }
+        var transf = this.transform
+        var cell = this.grid.cell
+        var floor = main.getCurrentFloor()
+        var gridPixWidth = floor._gridW * cell
+        var gridPixHeight = floor._gridH * cell
+        var testX = clientX - transf.moveX
+        var testY = clientY - transf.moveY
+        if (testX >= 0 && testX < gridPixWidth) {
+            result.x = Math.floor(testX / cell)
+        }
+        if (testY >= 0 && testY < gridPixHeight) {
+            result.y = Math.floor(testY / cell)
+        }
+        return result
+    },
+    /**
+     * Updates the grid to fit it to the floor plan canvas
+     *
+     * @memberof renderer
+     *
+     *
+     */
+    updateGrid: function () {
+        var floorImg = this.floorCanvas
+        var scale = this.transform.scale
+        this.grid.adjust(floorImg, scale)
+    },
+    /**
+     * Zooms the main canvas, focussing on the given point
+     *
+     * @param {number} focusX - The viewport x-coord of the focus point
+     * @param {number} focusY - The viewport y-coord of the focus point
+     * @param {number} delta - The wheel event's delta value for calculating the new scale
+     */
+    zoom: function (focusX, focusY, delta) {
+        var transform = this.transform
+        var s = 1 + delta * this.scaleFactor
+        var zoomFocusX = -(focusX - transform.moveX)
+        var zoomFocusY = -(focusY - transform.moveY)
+        var newScale = transform.scale * s
+        if (newScale <= this.scaleMax && newScale >= this.scaleMin) {
+            transform.scale = newScale
+            transform.moveX = s * zoomFocusX + mouse.x
+            transform.moveY = s * zoomFocusY + mouse.y
+            this.updateGrid()
+            $('#zoom-value')
+                .text(Math.round(transform.scale * 100))
+        }
+        if (newScale >= this.scaleMax) {
+            $('#zoom-value')
+                .text(Math.round(this.scaleMax * 100))
+        }
+    },
+    pan: function(movementX, movementY) {
+        this.transform.moveX += movementX
+        this.transform.moveY += movementY
+    },
+    setScale: function(value) {
+        var floorImg = this.floorImage
+        this.grid.adjust(floorImg.width * value, floorImg.height * value)
+        this.grid.redraw()
+        this.transform.scale = value
+    },
+    resetTransform: function() {
+        var transform = this.transform
+        var cvs = this.canvas
+        transform.moveX = transform.moveY = 0
+        transform.scale = Math.min(cvs.width / this.floorCanvas.width, cvs.height /
+            this.floorCanvas.height)
+        this.updateGrid()
+    },
+    loadFloorImage: function (file) {
+        var floorImage = new Image()
+        var now = new Date()
+        var srcURL = String(file) + '#' + now.toTimeString()
+        renderer.isReady = false
+        floorImage.onload = function () {
+            renderer.floorCanvas.width = this.width
+            renderer.floorCanvas.height = this.height
+            renderer.floorCanvas.getContext('2d')
+                .drawImage(this, 0, 0)
+            renderer.updateGrid()
+            renderer.resetTransform()
+            renderer.isReady = true
+            renderer.render()
+            $('#zoom-value')
+                .text(renderer.transform.scale.toFixed(2) * 100)
+        }
+        floorImage.onerror = function () {
+            renderer.loadFloorImage(DEFAULT_FLOOR_PLAN)
+        }
+        floorImage.src = srcURL
+    },
+    loadFloorPDF: function (file) {
+        var absFilePath = path.resolve(file)
+        PDFJS.getDocument(absFilePath)
+            .then(function (pdf) {
+                pdf.getPage(1)
+                    .then(function (page) {
+                        var cvs = renderer.floorCanvas
+                        var viewport = page.getViewport(5.0)
+                        var renderContext = {
+                            canvasContext: cvs.getContext('2d'),
+                            viewport: viewport
+                        }
+                        cvs.height = viewport.height
+                        cvs.width = viewport.width
+                        renderer.updateGrid()
+                        renderer.isReady = true
+                        return page.render(renderContext)
+                    })
+                    .then(function () {
+                        renderer.updateGrid()
+                        renderer.render()
+                    })
+                    .catch(function (err) {
+                        renderer.loadFloorImage(DEFAULT_FLOOR_PLAN)
+                    })
+            })
+    },
+    loadFloorPlan: function (floorPlanFile) {
+        if (path.extname(floorPlanFile) === '.pdf') {
+            renderer.loadFloorPDF(floorPlanFile)
+        } else {
+            renderer.loadFloorImage(floorPlanFile)
+        }
+    },
+    loadCurrentFloor: function () {
+        var projectID = main.getState()
+            .projectID
+        var buildingID = main.getState()
+            .currentBuildingID
+        var floorID = main.getState()
+            .currentFloorID
+        var dirPath = path.join(main.floorPlanPath, projectID, buildingID)
+        fs.readdir(dirPath, function (err, files) {
+            if (err) {
+                renderer.loadFloorPlan(DEFAULT_FLOOR_PLAN)
+                return
+            }
+            var isFloorPlanHere = files.some(function (file) {
+                var ext = path.extname(file)
+                var base = path.basename(file, ext)
+                // var base = path.basename(file)
+                if (base === floorID && fs.statSync(path.join(dirPath, file))
+                        .isFile()) {
+                    renderer.loadFloorPlan(path.join(dirPath, file))
+                    return true
+                }
+            })
+            if (!isFloorPlanHere) {
+                renderer.loadFloorPlan(DEFAULT_FLOOR_PLAN)
+            }
+        })
+    },
+    drawFloorPlan: function() {
+        this.context.drawImage(this.floorCanvas, 0, 0)
+    },
+    drawGrid: function() {
+        this.context.drawImage(this.grid.canvas, 0, 0)
+    },
+
+    drawDevices: function(deviceMap, deviceIDs, selectedID) {
+        var ctx = this.context
+        var grid = this.grid
+        var view = views[currentView]
+        deviceIDs.forEach(function(deviceID) {
+            var device = deviceMap[deviceID]
+            var gridX = device._x
+            var gridY = device._y
+            if (gridX >= 0 && gridY >= 0) {
+                var style = deviceStyles[device._role]
+                var cell = grid.cell
+                var x = gridX * cell
+                var y = gridY * cell
+                ctx.fillStyle = style
+                if (deviceID === selectedID || view.multiSelected.indexOf(deviceID) >= 0) {
+                    ctx.strokeStyle = 'orange'
+                    ctx.lineWidth = 2
+                } else {
+                    ctx.strokeStyle = '#000'
+                    ctx.lineWidth = 1
+                }
+                ctx.fillRect(x, y, cell, cell)
+                ctx.strokeRect(x, y, cell, cell)
+            }
+        })
+    },
+    drawSpaces: function(spaceIDs, selectedID, selectedMapID) {
+
+        var ctx = this.context
+        var spaces = main.getCurrentController()
+            .spaces
+        var state = main.getState()
+        var cell = this.grid.cell
+        var view = views[currentView]
+        spaceIDs.forEach(function(spaceID) {
+            var space = spaces[spaceID]
+            var maps = spaces[spaceID].maps
+            var mapIDs = spaces[spaceID].getMapRefsByIDs(state.currentBuildingID,
+                state.currentFloorID)
+            mapIDs.forEach(function(mapID) {
+                var map = maps[mapID]
+                if (map._x >= 0 && map._y >= 0) {
+                    var style = spaceStyles[space._type]
+                    var x = map._x * cell
+                    var y = map._y * cell
+                    var w = map._width * cell
+                    var h = map._height * cell
+                    var mapFill
+                    var alphaVal = ctx.globalAlpha
+                    ctx.save()
+                    if (style.hasOwnProperty('colorStops')) {
+                        switch (map._orientation) {
+                            case 0:
+                                mapFill = ctx.createLinearGradient(w / 2, h, w / 2,
+                                    0)
+                                break
+                            case 1:
+                                mapFill = ctx.createLinearGradient(0, h, w, 0)
+                                break
+                            case 2:
+                                mapFill = ctx.createLinearGradient(0, h / 2, w, h /
+                                    2)
+                                break
+                            case 3:
+                                mapFill = ctx.createLinearGradient(0, 0, w, h)
+                                break
+                            case 4:
+                                mapFill = ctx.createLinearGradient(w / 2, 0, w / 2,
+                                    h)
+                                break
+                            case 5:
+                                mapFill = ctx.createLinearGradient(w, 0, 0, h)
+                                break
+                            case 6:
+                                mapFill = ctx.createLinearGradient(w, h / 2, 0, h /
+                                    2)
+                                break
+                            case 7:
+                                mapFill = ctx.createLinearGradient(w, h, 0, 0)
+                                break
+                        }
+                        Object.keys(style.colorStops)
+                            .forEach(function(gradientPos) {
+                                mapFill.addColorStop(gradientPos, style.colorStops[
+                                    gradientPos])
+                            })
+                    } else {
+                        mapFill = style.fill
+                    }
+                    ctx.translate(x, y)
+                    ctx.fillStyle = mapFill
+                        // ctx.restore()
+                    ctx.strokeStyle = style.stroke
+                    // if (spaceID === selectedID) {
+                    if(spaceID === selectedID || view.multiSelected.indexOf(spaceID) >= 0){
+                        ctx.lineWidth = 3
+                        ctx.globalAlpha *= 0.95
+                    } else {
+                        ctx.lineWidth = 2
+                        ctx.globalAlpha *= 0.85
+                    }
+                    ctx.fillRect(0, 0, w, h)
+                    ctx.globalAlpha = alphaVal
+                    ctx.strokeRect(0, 0, w, h)
+                    ctx.restore()
+
+                    // NOTE-MAK: adding space name label to space canvas
+                    var vertex = map.getVertex(2)
+                    ctx.font = "600 " + cell * 1.4 + "px Verdana" //"500 {dynamc}px Arial sans-serif"
+                    var label = {
+                        x: cell * (vertex.x),
+                        y: cell * (vertex.y)
+                    }
+                    ctx.strokeStyle = "#000"
+                    ctx.lineWidth = cell * 0.5
+                    ctx.fillStyle = "#FFF"
+                    ctx.font = "600 px Verdana" //"500 {dynamc}px Arial sans-serif"
+                    //NOTE Kamlesh: DT-57- Comment following line and added if else for ellipses label
+                    var spaceLabelWidth = ctx.measureText(space._name).width
+                    var minLabel = space._name.substr(0,3) + '..'
+                    ctx.textAlign = "end";
+                    var minLabelWidth = ctx.measureText(minLabel).width
+                    if(parseInt(w)-5 <= spaceLabelWidth){
+                        if(parseInt(w) < minLabelWidth){
+                           map._width = 5
+                       }
+                      ctx.strokeText(minLabel, label.x, label.y)
+                      ctx.fillText(minLabel, label.x, label.y)
+                    }else{
+                      ctx.strokeText(space._name, label.x, label.y)
+                      ctx.fillText(space._name, label.x, label.y)
+                    }
+                     var newSpaceId
+
+
+
+                    // Anchors
+                    if (view.multiSelected.indexOf(spaceID) >= 0 || (spaceID === selectedID && mapID === selectedMapID)){
+                      // if ((spaceID === selectedID && mapID === selectedMapID) || (newSpaceId =='')){
+                      // if ((spaceID === selectedID && mapID === selectedMapID)){
+                        ctx.save()
+                        ctx.fillStyle = 'white'
+                        ctx.strokeStyle = 'black'
+                        ctx.lineWidth = 1
+                        map.getVertices()
+                            .forEach(function(vertex) {
+                                var vX = vertex.x * cell
+                                var vY = vertex.y * cell
+                                ctx.strokeRect(vX, vY, cell, cell)
+                                ctx.fillRect(vX, vY, cell, cell)
+                            })
+                        ctx.restore()
+                    }
+
+                }
+            })
+        })
+    },
+    highlightMouse: function() {
+        var cell = this.grid.cell
+        if (mouse.gridX >= 0 && mouse.gridY >= 0) {
+            var ctx = this.context
+            var x = mouse.gridX * cell
+            var y = mouse.gridY * cell
+            ctx.strokeStyle = 'green'
+            ctx.lineWidth = 2
+            ctx.strokeRect(x, y, cell, cell)
+        }
+    },
+    drawCoordsTextBox: function(x, y) {
+        var ctx = this.context
+        var cvs = this.canvas
+        var cvsW = cvs.width
+        var cvsH = cvs.height
+        var textW = 60
+        var textH = 38
+        if (x >= 0 && y >= 0) {
+            ctx.save()
+            ctx.translate(0, cvsH - textH)
+            ctx.fillStyle = 'rgb(112,  112, 112)'
+            ctx.fillRect(0, 0, textW, textH)
+            ctx.font = '14px Verdana'
+            ctx.textAlign = 'justify'
+            ctx.fillStyle = 'white'
+            ctx.fillText('X: ' + x, 2, 14)
+            ctx.fillText('Y: ' + y, 2, 30)
+            ctx.restore()
+        }
+    },
+    drawDragRect: function(aGridX, aGridY, bGridX, bGridY) {
+        var cell = this.grid.cell
+        var x = Math.min(aGridX, bGridX) * cell
+        var y = Math.min(aGridY, bGridY) * cell
+        var w = (Math.abs(bGridX - aGridX) * cell)
+        var h = (Math.abs(bGridY - aGridY) * cell)
+        var ctx = this.context
+        ctx.save()
+        ctx.strokeStyle = 'green'
+        ctx.globalAlpha = 0.6
+        ctx.lineWidth = 2
+        ctx.strokeRect(x, y, w, h)
+        ctx.restore()
+    },
+    render: function() {
+        if (this.isReady) {
+            var ctx = this.context
+            var transform = this.transform
+            var md = mouse.mouseDown
+            ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+            ctx.save()
+            ctx.translate(transform.moveX, transform.moveY)
+            ctx.scale(transform.scale, transform.scale)
+            this.drawFloorPlan()
+            ctx.restore()
+            ctx.save()
+            ctx.translate(transform.moveX, transform.moveY)
+            this.drawGrid()
+            this.drawObjects()
+            this.highlightMouse()
+            ctx.restore()
+            this.drawCoordsTextBox(mouse.gridX, mouse.gridY)
+        }
+    },
+    printViewDataURL: function() {
+        var canvas = this.canvas
+        var context = this.context
+        var transform = this.transform
+        var controller = main.getCurrentController()
+        var controllerID = main.getState()
+            .currentControllerID
+        var floor = main.getCurrentFloor()
+        var canvasContainer = $('#canvas-container')
+        var dataURL
+            // Pause render loop
+        this.isReady = false
+            // Draw print view to main canvas
+        this.grid.adjust(this.floorCanvas, 1.0)
+        canvas.width = this.grid.canvas.width
+        canvas.height = this.grid.canvas.height
+        context.clearRect(0, 0, canvas.width, canvas.height)
+        this.drawFloorPlan()
+        this.drawGrid()
+        this.drawSpaces(controller.getGeneralSpaces())
+        this.drawSpaces(controller.getBeaconSpaces())
+        this.drawSpaces(controller.getUserSpaces())
+        this.drawDevices(floor.sensors, floor.getSensorsByController(
+            controllerID))
+        this.drawDevices(floor.fixtures, floor.getFixturesByController(
+            controllerID))
+        dataURL = canvas.toDataURL()
+            // Restore renderer state
+        canvas.width = canvasContainer.width()
+        canvas.height = canvasContainer.height()
+        this.grid.adjust(this.floorCanvas, this.transform.scale)
+            // Everything is back to normal
+        this.isReady = true
+
+        return dataURL
+    },
+    drawObjects: function() {
+        switch (currentView) {
+            case 'fixtures':
+                var floor = main.getCurrentFloor()
+                var controllerID = main.getState()
+                    .currentControllerID
+                var controller = main.getCurrentController()
+                var ctx = this.context
+                ctx.save()
+                ctx.globalAlpha = 0.25
+                this.drawSpaces(controller.getBeaconSpaces().concat(controller.getGeneralSpaces())
+                    .concat(controller.getUserSpaces()))
+                // this.drawSpaces(controller.getBeaconSpaces().concat(controller.getUserSpaces()))
+                ctx.globalAlpha = 0.35
+                this.drawDevices(floor.sensors, floor.getSensorsByController(
+                    controllerID))
+                ctx.restore()
+                this.drawDevices(floor.fixtures, floor.getFixturesByController(
+                    controllerID), views.fixtures.selected)
+                break
+
+            case 'sensors':
+                var floor = main.getCurrentFloor()
+                var controllerID = main.getState()
+                    .currentControllerID
+                var controller = main.getCurrentController()
+                var ctx = this.context
+                ctx.save()
+                ctx.globalAlpha = 0.25
+                this.drawSpaces(controller.getGeneralSpaces().concat(controller.getUserSpaces()))
+                // this.drawSpaces(controller.getBeaconSpaces()
+                //     .concat(controller.getUserSpaces()))
+                ctx.globalAlpha = 0.35
+                this.drawDevices(floor.fixtures, floor.getFixturesByController(
+                    controllerID))
+                ctx.restore()
+                this.drawDevices(floor.sensors, floor.getSensorsByController(
+                    controllerID), views.sensors.selected)
+                break
+
+            case 'building':
+                this.drawSpaces([main.getCurrentController()
+                    .getDefaultSpace()
+                ])
+                break
+
+            case 'general':
+                var floor = main.getCurrentFloor()
+                var controllerID = main.getState()
+                    .currentControllerID
+                var controller = main.getCurrentController()
+                var ctx = this.context
+                ctx.save()
+                ctx.globalAlpha = 0.25
+                this.drawSpaces(controller.getBeaconSpaces())
+                this.drawSpaces(controller.getUserSpaces())
+                zoneContextMenu.items[1].enabled = false;
+                zoneContextMenu.items[2].enabled = false;
+                // this.drawSpaces(controller.getUserSpaces().concat(controller.getBeaconSpaces()))
+                ctx.globalAlpha = 0.35
+                this.drawDevices(floor.fixtures, floor.getFixturesByController(
+                    controllerID))
+                this.drawDevices(floor.sensors, floor.getSensorsByController(
+                    controllerID))
+                ctx.restore()
+                this.drawSpaces(main.getCurrentController()
+                    .getGeneralSpaces(), views.general.selected, views.general.selectedMap
+                )
+                if (mouse.isDragging && mouse.isLeftButtonDown && views.general.selected ===
+                    '') {
+                    var md = mouse.mouseDown
+                    this.drawDragRect(md.gridX, md.gridY, mouse.gridX, mouse.gridY)
+                }
+                break
+
+            //NOTE DT-58 Beacon Support
+            case 'beacon':
+                var floor = main.getCurrentFloor()
+                var controllerID = main.getState()
+                    .currentControllerID
+                var controller = main.getCurrentController()
+                var ctx = this.context
+                ctx.save()
+                ctx.globalAlpha = 0.25
+                // this.drawSpaces(controller.getUserSpaces().concat(controller.getGeneralSpaces()))
+                this.drawSpaces(controller.getUserSpaces())
+                this.drawSpaces(controller.getGeneralSpaces())
+                ctx.globalAlpha = 0.35
+                this.drawDevices(floor.fixtures, floor.getFixturesByController(
+                controllerID))
+                this.drawDevices(floor.sensors, floor.getSensorsByController(
+                controllerID))
+                ctx.restore()
+                this.drawSpaces(main.getCurrentController()
+                    .getBeaconSpaces(), views.beacon.selected, views.beacon.selectedMap)
+                if (mouse.isDragging && mouse.isLeftButtonDown && views.beacon.selected ===
+                    '') {
+                    var md = mouse.mouseDown
+                    this.drawDragRect(md.gridX, md.gridY, mouse.gridX, mouse.gridY)
+                }
+                zoneContextMenu.items[1].enabled = false;
+                zoneContextMenu.items[2].enabled = false;
+                break
+
+            case 'user':
+                var floor = main.getCurrentFloor()
+                var controllerID = main.getState()
+                    .currentControllerID
+                var controller = main.getCurrentController()
+                var ctx = this.context
+                ctx.save()
+                ctx.globalAlpha = 0.25
+                this.drawSpaces(controller.getGeneralSpaces())
+                this.drawSpaces(controller.getBeaconSpaces())
+                // this.drawSpaces(controller.getBeaconSpaces().concat(controller.getGeneralSpaces()))
+                ctx.globalAlpha = 0.35
+                this.drawDevices(floor.fixtures, floor.getFixturesByController(
+                    controllerID))
+                this.drawDevices(floor.sensors, floor.getSensorsByController(
+                    controllerID))
+                ctx.restore()
+                this.drawSpaces(main.getCurrentController()
+                    .getUserSpaces(), views.user.selected, views.user.selectedMap)
+                if (mouse.isDragging && mouse.isLeftButtonDown && views.user.selected ===
+                    '') {
+                    var md = mouse.mouseDown
+                    this.drawDragRect(md.gridX, md.gridY, mouse.gridX, mouse.gridY)
+                }
+              // zoneContextMenu.items[1].enabled = true;
+              // zoneContextMenu.items[2].enabled = true;
+                break
+        }
+    }
+}
+
+var currentView = 'user'
+var views = {
+        fixtures: {
+            multiSelected: [],
+            selected: '',
+            draw: function() {
+                var floor = main.getCurrentFloor()
+                var fixtures = floor.getFixturesByController(main.getState()
+                    .currentControllerID)
+                renderer.drawDevices(fixtures)
+            },
+            updateTab: updateDeviceTab,
+            allocateSelectedDevice: function() {
+                var buildingID = main.getState()
+                    .currentBuildingID
+                var floorID = main.getState()
+                    .currentFloorID
+                main.getProject()
+                    .allocateFixture(this.selected, buildingID, floorID)
+            },
+            eventHandlers: {
+                mousedown: deviceMouseDown,
+                mousemove: deviceMouseMove,
+                mouseup: deviceMouseUp,
+                dblclick: deviceDoubleClick,
+                keyup: fixtureKeyUp,
+                contextmenu: function(event) {
+                    deviceContextMenu(event, fixtureContextMenu)
+                }
+            }
+        },
+        sensors: {
+            multiSelected: [],
+            selected: '',
+            draw: function() {
+                var sensors = main.getCurrentFloor()
+                    .getSensorsByController(main.getState()
+                        .currentControllerID)
+                renderer.drawDevices(sensors)
+            },
+            updateTab: updateDeviceTab,
+            allocateSelectedDevice: function() {
+                var buildingID = main.getState()
+                    .currentBuildingID
+                var floorID = main.getState()
+                    .currentFloorID
+                main.getProject()
+                    .allocateSensor(this.selected, buildingID, floorID)
+            },
+            eventHandlers: {
+                mousedown: deviceMouseDown,
+                mousemove: deviceMouseMove,
+                mouseup: deviceMouseUp,
+                dblclick: deviceDoubleClick,
+                keyup: sensorKeyUp,
+                contextmenu: function(event) {
+                    deviceContextMenu(event, sensorContextMenu)
+                }
+            }
+        },
+        building: {
+            multiSelected: [],
+            selected: 'BuildingDefault',
+            draw: function() {
+                renderer.drawSpaces([main.getCurrentController()
+                    .getDefaultSpace()
+                ])
+            },
+            updateTab: updateBuildingTab,
+            eventHandlers: {}
+        },
+        general: {
+            multiSelected: [],
+            selected: '',
+            selectedMap: '',
+            isResizing: false,
+            anchorX: -1,
+            anchorY: -1,
+            mapOffsetX: -1,
+            mapOffsetY: -1,
+            draw: function() {
+                var generalSpaceIDs = main.getCurrentController()
+                    .getGeneralSpaces()
+                renderer.drawSpaces(generalSpaceIDs)
+            },
+            updateTab: function() {
+                updateSpaceTab('general')
+            },
+            eventHandlers: {
+                mousedown: spaceMouseDown,
+                mousemove: spaceMouseMove,
+                mouseup: spaceMouseUp,
+                keyup: zoneKeyUp,
+                contextmenu: spaceContextMenu
+            }
+        },
+        //Note : Kamlesh DT-58
+        beacon: {
+            multiSelected: [],
+            selected: '',
+            selectedMap: '',
+            isResizing: false,
+            anchorX: -1,
+            anchorY: -1,
+            mapOffsetX: -1,
+            mapOffsetY: -1,
+            draw: function() {
+                var beaconSpaceIDs = main.getCurrentController()
+                    .getBeaconSpaces()
+                renderer.drawSpaces(beaconSpaceIDs)
+            },
+            updateTab: function() {
+                updateSpaceTab('beacon')
+            },
+            eventHandlers: {
+                mousedown: spaceMouseDown,
+                mousemove: spaceMouseMove,
+                mouseup: spaceMouseUp,
+                keyup: zoneKeyUp,
+                contextmenu: spaceContextMenu
+            }
+
+        },
+        user: {
+            multiSelected: [],
+            selected: '',
+            selectedMap: '',
+            isResizing: false,
+            anchorX: -1,
+            anchorY: -1,
+            mapOffsetX: -1,
+            mapOffsetY: -1,
+            draw: function() {
+                var userSpaceIDs = main.getCurrentController()
+                    .getUserSpaces()
+                renderer.drawSpaces(userSpaceIDs)
+            },
+            updateTab: function() {
+                updateSpaceTab('user')
+            },
+            eventHandlers: {
+                mousedown: spaceMouseDown,
+                mousemove: spaceMouseMove,
+                mouseup: spaceMouseUp,
+                keyup: zoneKeyUp,
+                contextmenu: spaceContextMenu
+            }
+        },
+        reset: function() {
+            // Fixtures
+            this.fixtures.selected = ''
+
+            // Sensors
+            this.sensors.selected = ''
+
+            // General zones
+            this.general.selected = ''
+            this.general.selectedMap = ''
+            this.general.isResizing = false
+            this.general.anchorX = -1
+            this.general.anchorY = -1
+            this.general.mapOffsetX = -1
+            this.general.mapOffsetY = -1
+
+            // NOTE: Kamlesh - DT-58 Beacon zones
+            this.beacon.selected = ''
+            this.beacon.selectedMap = ''
+            this.beacon.isResizing = false
+            this.beacon.anchorX = -1
+            this.beacon.anchorY = -1
+            this.beacon.mapOffsetX = -1
+            this.beacon.mapOffsetY = -1
+
+            // User zones
+            this.user.selected = ''
+            this.user.selectedMap = ''
+            this.user.isResizing = false
+            this.user.anchorX = -1
+            this.user.anchorY = -1
+            this.user.mapOffsetX = -1
+            this.user.mapOffsetY = -1
+                // Reset text/number inputs
+            $('#tabs')
+                .find('input:text,input[type="number"]')
+                .val('')
+                .end()
+        }
+    }
+    /**
+     * Search for a user or general space (depending on current view) at given grid coords
+     *
+     * @param      {number}   gridX   Grid X coordinate
+     * @param      {number}   gridY   Grid Y coordinate
+     * @return     {string}   Space ID if a space is found, empty string otherwise
+     */
+function findSpace(gridX, gridY) {
+    var buildingID = main.getState()
+        .currentBuildingID
+    var floorID = main.getState()
+        .currentFloorID
+    var controllerID = main.getState()
+        .currentControllerID
+
+    if(currentView === 'general'){
+      return main.getProject().findGeneralSpace(gridX, gridY, buildingID, floorID, controllerID)
+    }else if(currentView === 'beacon'){
+      return main.getProject().findBeaconSpace(gridX, gridY, buildingID, floorID, controllerID)
+    }else if(currentView === 'user'){
+      return main.getProject().findUserSpace(gridX, gridY, buildingID, floorID, controllerID)
+    }
+}
+
+
+function updateSpaceTab(tabID) {
+    // alert("updated "+ tabID)
+    var tab = $('#' + tabID)
+    var view = views[currentView]
+    if (view.selected !== '') {
+        var space = main.getCurrentController()
+            .spaces[view.selected]
+          var schedule = space.schedule
+          $('#user-schedule li').each(function(){
+              var scheduleTab = $(this).attr('aria-controls')
+              if(scheduleTab != undefined){
+                var scheduleIds = scheduleTab.split("-")
+                var scheduleId = scheduleIds[1]
+                // console.log(schedule)
+                if(schedule){
+                  if(schedule[scheduleId] == undefined && scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }else{
+                    // console.log(schedule[scheduleId])
+                    $(this).css({'display':''})
+                  }
+                }else{
+                  if(scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }
+                }
+              }
+
+          })
+          $('#general-schedule li').each(function(){
+              var scheduleTab = $(this).attr('aria-controls')
+              if(scheduleTab != undefined){
+                var scheduleIds = scheduleTab.split("-")
+                var scheduleId = scheduleIds[2]
+                if(schedule){
+                  if(schedule[scheduleId] == undefined && scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }else{
+                 //   console.log(schedule[scheduleId])
+                    $(this).css({'display':''})
+                  }
+                }else{
+                  if(scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }
+                }
+              }
+
+          })
+          $('#beacon-schedule li').each(function(){
+              var scheduleTab = $(this).attr('aria-controls')
+              if(scheduleTab != undefined){
+                var scheduleIds = scheduleTab.split("-")
+                var scheduleId = scheduleIds[2]
+                if(schedule){
+                  if(schedule[scheduleId] == undefined && scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }else{
+                 //   console.log(schedule[scheduleId])
+                    $(this).css({'display':''})
+                  }
+                }else{
+                  if(scheduleId > 1){
+                    $(this).css({'display':'none'})
+                  }
+                }
+              }
+
+          })
+            // tab.find('.picked').removeClass('picked');
+            // tab.find('.zone-container button').button('enable');
+          tab.find('.zone-name')
+              .val(space._name)
+              // .prop('disabled', false)
+              // tab.find('.type-radio[value=' + space._type + ']').trigger('click')
+          tab.find('.type-radio')
+              .val([space._type])
+          updateLightSceneElements(space)
+          tab.find('#' + space._defaultLightScene)
+              .trigger('click')
+          tab.find('.activation-checkbox')
+              .prop('disabled', false)
+          tab.find('.default-brightness-slider')
+              .val(space._defaultBrightness)
+              .prop('disabled', false)
+          tab.find('.default-brightness-value')
+              .text(space._defaultBrightness + '%')
+          updateActivationSettings(tab)
+          if (view.selectedMap !== '') {
+              var map = space.maps[view.selectedMap]
+              tab.find('input[name=orientation]')
+                  .val([map._orientation])
+          }
+    } else {
+
+        tab.find('.zone-name')
+            .val('')
+            // .prop('disabled', true)
+        tab.find('.activation-checkbox')
+            .prop('disabled', true)
+        tab.find('.activation-settings')
+            .hide()
+        tab.find('.available-lightscene')
+            .val([''])
+            .prop('disabled', true)
+        tab.find('.ls-icon')
+            .attr('lightscene', '')
+        tab.find('.mood-container')
+            .hide()
+        tab.find('.input-orientation:checked')
+            .prop('checked', false)
+        tab.find('.default-brightness-slider')
+            .val(0)
+            .prop('disabled', true)
+        tab.find('.default-brightness-value')
+            .text('')
+    }
+}
+
+/**
+ * Updates inputs in the Building Layer view with values from the default space
+ */
+function updateBuildingTab() {
+    var controller = main.getCurrentController()
+    var defaultSpaceID = controller.getDefaultSpace()
+    var defaultSpace = controller.spaces[defaultSpaceID]
+    var triggerTimes = main.parseTrigger(defaultSpace._zoneActiveTrigger)
+    var buildingTab = $('#building')
+    updateActivationBuildingSettings(buildingTab)
+}
+function updateActivationBuildingSettings(tab) {
+    var view = views[currentView]
+    var spaceObj = main.getCurrentController().spaces[view.selected]
+
+    tab.find('.target-lux-num')
+        .val(spaceObj._dhTargetLux)
+
+    tab.find('.dh-delta-up')
+        .val(spaceObj._dhDeltaUp)
+
+    tab.find('.dh-delta-down')
+        .val(spaceObj._dhDeltaDown)
+}
+/**
+ * Updates the activation settings element of the current view with selected space data
+ *
+ * @method     updateActivationSettings
+ * @param      {Object}  tab     jQuery Object - the tab for current view ($('#general') for general, $('#user') for user)
+ */
+
+function updateActivationSettings(tab) {
+    // var activationMenu = tab.find('.activation-settings')
+    var activationID = 'zoneActive'
+    var view = views[currentView]
+    var spaceObj = main.getCurrentController()
+        .spaces[view.selected]
+    var activation = spaceObj.activation[activationID]
+
+    var timeout = spaceObj._timeout
+    var fadeout = spaceObj._fadeout
+    var behaviour = spaceObj._behaviour
+    tab.find('.target-lux-num')
+        .val(spaceObj._dhTargetLux)
+    tab.find('.dh-delta-up')
+        .val(spaceObj._dhDeltaUp)
+    tab.find('.dh-delta-down')
+        .val(spaceObj._dhDeltaDown)
+    var $time_start = $("#time_start"),
+        $time_end = $("#time_end")
+    var startPicker = $time_start.pickatime('picker'),
+        endPicker = $time_end.pickatime('picker')
+    if(spaceObj.layer != "Information"){
+      var triggerTimes = main.parseTrigger(spaceObj._zoneActiveTrigger)
+    }
+    var defaultAnimatedPalette = spaceObj.defaultAnimatedPalette;
+    var $cicadium_on_checkbox = $("#cicadium-cycle-checkbox");
+    var cicadiumChecked = $cicadium_on_checkbox.is(":checked");
+    if(currentView === "user" && (!defaultAnimatedPalette.animatedInfluence && !cicadiumChecked || defaultAnimatedPalette.animatedInfluence && cicadiumChecked)) {
+        $cicadium_on_checkbox.click();
+    }
+    // NOTE-MAK: update new occupancy elements
+    var effects = spaceObj._onOccupancy
+    // NOTE-MAK: toggle conditons for manual button
+    if($(tab).find('#manual-on-checkbox').length > 0){
+        var $manual_checkbox = $("#manual-on-checkbox")
+        if(spaceObj.layer != "Information"){
+            const manualEffect = effects,
+                manualChecked = $manual_checkbox.is(':checked')
+
+            if (manualEffect && !manualChecked || !manualEffect && manualChecked) {
+                $manual_checkbox.click()
+            }
+        }
+    }
+    if($(tab).find('#manual-on-checkbox-general').length > 0){
+        var $manual_checkbox_general = $("#manual-on-checkbox-general")
+        if(spaceObj.layer != "Information"){
+            const manualEffectGeneral = effects,
+                manualCheckedGeneral = $manual_checkbox_general.is(':checked')
+
+            if (manualEffectGeneral && !manualCheckedGeneral || !manualEffectGeneral && manualCheckedGeneral) {
+                $manual_checkbox_general.click()
+            }
+        }
+    }
+
+    // NOTE-MAK: update corresponding pickadate fields
+
+
+    if($(tab).find('#occupancy-timeout-duration').length > 0){
+      var timeoutPicker = $(tab).find('#occupancy-timeout-duration').pickatime('picker')
+      timeoutPicker.set('select', timeout)
+    }
+    if($(tab).find('#occupancy-fadeout-duration').length > 0){
+      var fadeoutPicker = $(tab).find('#occupancy-fadeout-duration').pickatime('picker')
+      fadeoutPicker.set('select', fadeout)
+    }
+    if($(tab).find('#occupancy-timeout-duration-general').length > 0){
+      var timeoutPickerGeneral = $(tab).find('#occupancy-timeout-duration-general').pickatime('picker')
+      timeoutPickerGeneral.set('select', timeout)
+    }
+    if($(tab).find('#occupancy-fadeout-duration-general').length > 0){
+      var fadeoutPickerGeneral = $(tab).find('#occupancy-fadeout-duration-general').pickatime('picker')
+      fadeoutPickerGeneral.set('select', fadeout)
+    }
+
+    // NOTE: Prakash : User zone start time and end time are displayed from here
+    var $time_start = $("#time_start"),
+        $time_end = $("#time_end")
+    var startPicker = $time_start.pickatime('picker'),
+        endPicker = $time_end.pickatime('picker')
+    if(spaceObj.layer != "Information"){
+      var triggerTimes = main.parseTrigger(spaceObj._zoneActiveTrigger)
+      startPicker.set('select', triggerTimes[0],  { format: 'HH:i' } )
+      endPicker.set('select', triggerTimes[1],  { format: 'HH:i' } )
+    }
+
+    // NOTE: Prakash : General zone start time and end time are displayed from here
+    var $activation_time_from = $("#activation-time-from"),
+        $activation_time_to = $("#activation-time-to")
+    var startPickerGeneral = $activation_time_from.pickatime('picker'),
+        endPickerGeneral = $activation_time_to.pickatime('picker')
+    if(spaceObj.layer != "Information"){
+      var triggerTimes = main.parseTrigger(spaceObj._zoneActiveTrigger)
+      startPickerGeneral.set('select', triggerTimes[0],  { format: 'HH:i' } )
+      endPickerGeneral.set('select', triggerTimes[1],  { format: 'HH:i' } )
+    }
+
+    // NOTE: Prakash : Beacon zone start time and end time are displayed from here
+    var $time_start_beacon = $("#time_start_beacon"),
+        $time_end_beacon = $("#time_end_beacon")
+    var startPickerBeacon = $time_start_beacon.pickatime('picker'),
+        endPickerBeacon = $time_end_beacon.pickatime('picker')
+    if(spaceObj.layer == "Information"){
+      var triggerTimes = main.parseTrigger(spaceObj._zoneActiveTrigger)
+      startPickerBeacon.set('select', triggerTimes[0],  { format: 'HH:i' } )
+      endPickerBeacon.set('select', triggerTimes[1],  { format: 'HH:i' } )
+    }
+}
+/**
+ * Update the lightscene elements in the current view
+ *
+ * @method     updateLightSceneElements
+ * @param      {Object}  spaceObj  current selected space
+ */
+function updateLightSceneElements(spaceObj) {
+    var view = views[currentView]
+      $('#activation-'+currentView+' li:first-child').trigger('click');
+    if (currentView === 'general') {
+        $('#ls-general-zone')
+            .attr('lightscene', spaceObj._defaultLightScene)
+    }
+
+    // else if{
+    //     var availableLightScenes = spaceObj.availableLightScenes
+    //     $('.available-lightscene')
+    //         .prop('disabled', false)
+    //         .prop('checked', false)
+    //         .attr('mood', 'fire')
+    //         .filter(function() {
+    //             return availableLightScenes.hasOwnProperty(this.value)
+    //         })
+    //         .map(function() {
+    //             $(this)
+    //                 .prop('checked', true)
+    //                 .attr('mood', availableLightScenes[this.value])
+    //         })
+    //     $('.available-ls-label')
+    //         .map(function(index, element) {
+    //             var mood = $('#' + $(this)
+    //                     .attr('for'))
+    //                 .attr('mood')
+    //             $(this)
+    //                 .find('input.mood')
+    //                 .val([mood])
+    //         })
+    //     $('.default-lightscene')
+    //         .val([spaceObj._defaultLightScene])
+    // }
+    else {
+        var availableLightScenes = spaceObj.availableLightScenes
+        $('.available-lightscene').prop('disabled', false).prop('checked', false).attr('mood', 'vigilant').filter(
+              function() {
+                    // console.log(this.value)
+                    // console.log(availableLightScenes.hasOwnProperty(this.value))
+                  return availableLightScenes.hasOwnProperty(this.value)
+              }
+            ).map(function() {
+                $(this).prop('checked', true).attr('mood', availableLightScenes[this.value])
+            })
+        $('.available-ls-label')
+            .map(function(index, element) {
+                var mood = $('#' + $(this)
+                        .attr('for'))
+                    .attr('mood')
+                $(this)
+                    .find('input.mood')
+                    .val([mood])
+            })
+
+        $('.available-ls-label-beacon')
+            .map(function(index, element) {
+                var mood = $('#' + $(this)
+                        .attr('for'))
+                    .attr('mood')
+                $(this)
+                    .find('input.mood')
+                    .val([mood])
+            })
+        $('.default-lightscene')
+            .val([spaceObj._defaultLightScene])
+    }
+}
+
+/**
+ * Update selected space ID and map ID in the current view
+ *
+ * @method     selectSpace
+ * @param      {Object}  spaceMap  object with "spaceID" and "mapID" properties
+ */
+//NOTE- Kamlesh: DT-54 Multiple Space Selection: Create isMultiSelect
+function selectSpace(spaceMap, isMultiSelect ,providedView, removePreviousSpace ) {
+    var view = views[providedView || currentView]
+    var previousSelectedID = view.selected;
+    view.selected = spaceMap.spaceID
+    view.selectedMap = spaceMap.mapID
+    // debugger;
+    if(isMultiSelect){
+        if(spaceMap && spaceMap.spaceID != "" && view.multiSelected.indexOf(spaceMap.spaceID) < 0)  {
+
+            view.multiSelected.push(spaceMap.spaceID)
+            if(view.multiSelected.indexOf(previousSelectedID) < 0 && !removePreviousSpace)  {
+                view.multiSelected.push(previousSelectedID)
+            }
+        }
+
+    } else{
+       // view.multiSelected = []
+        view.multiSelected = []
+    }
+    if(!providedView || providedView === currentView){
+        view.updateTab()
+    }
+
+}
+
+function selectDevice(deviceID, isMultiSelect ,providedView ) {
+    var view = views[providedView || currentView]
+    var previousSelectedID = view.selected;
+    view.selected = deviceID;
+    // view.selectedMap = spaceMap.mapID
+    // debugger;
+    if(isMultiSelect){
+        if(deviceID && view.multiSelected.indexOf(deviceID) < 0)  {
+
+            view.multiSelected.push(deviceID)
+            if(view.multiSelected.indexOf(previousSelectedID) < 0 )  {
+                view.multiSelected.push(previousSelectedID)
+            }
+        }
+
+    } else{
+        // view.multiSelected = []
+        view.multiSelected = []
+    }
+    if(!providedView || providedView === currentView){
+        view.updateTab()
+    }
+
+}
+
+
+
+
+
+var inputSearchValueByClick = $('#inputSearchValueBox').val();
+
+
+function searchInputValueByClick() {
+    var inputSearchValueByClick = $('#inputSearchValueBox').val();
+    $('.imageClick')
+        .on('click', function (event) {
+            // alert(inputSearchValueByClick);
+        })
+}
+
+function updateSearchresultDescriptionOnTabClick(){
+    var message = '';
+    if(currentView === 'general' || currentView === 'user' || currentView === 'beacon') {
+        var selectedView = views[currentView].multiSelected.filter(Boolean).length;
+        var activeFixtures =  views["fixtures"].multiSelected.filter(Boolean).length;
+        var activeSensors =   views["sensors"].multiSelected.filter(Boolean).length;
+        message =  selectedView + " spaces contains " + (activeSensors+ activeFixtures) + " devices";
+    } else if(currentView === 'fixtures' || currentView === 'sensors' ) {
+        var activeFixtures =  views["fixtures"].multiSelected.filter(Boolean).length;
+        var activeSensors =  views["sensors"].multiSelected.filter(Boolean).length;
+        message = (currentView === 'fixtures' ? activeFixtures : activeSensors) + " "+currentView+ " devices found";
+    } else {
+        message = "No results to show";
+    }
+    $("#searchResultCount").html(message)
+}
+function selectAssociatedSpacesToDevice(searchDevice , view, removePreviousSpace){
+    var layerToView = {General: 'general', User: "user", Information: 'beacon'}
+    var buildingID = main.getState()
+        .currentBuildingID
+    var floorID = main.getState()
+        .currentFloorID
+    var spaces = main.getCurrentController().spaces;
+    var selectedSpaces = Object.keys(spaces).filter(function(spaceID) {
+        var space = spaces[spaceID]
+        if( view === 'fixtures' && Object.keys(layerToView).indexOf(space.layer) != -1) {
+            return space.activeFixtures.some(function(fixture) {
+                return fixture === searchDevice;
+            })
+        }
+        if( view === 'sensors' && Object.keys(layerToView).indexOf(space.layer) != -1) {
+            return space.activeSensors.some(function (sensor) {
+                return sensor === searchDevice;
+            })
+        }
+    })
+
+    selectedSpaces.forEach(function(spaceID) {
+        var space = spaces[spaceID];
+        var mapID = space.getMapRefsByIDs(buildingID, floorID)[0]
+        selectSpace({spaceID: spaceID, mapID: mapID}, true, layerToView[space.layer], removePreviousSpace);
+    })
+
+}
+function validateIPaddress(ipaddress)
+{
+    if (/^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/.test(ipaddress))
+    {
+        return (true)
+    }
+    return (false)
+}
+
+
+
+function searchInputValue() {
+    isSearchModeEnabled = true;
+    var inputSearchValue = event.target.value;
+    var view = views[currentView].selected;
+    var searchedFixture;
+    var searchedSensor;
+    $("#searchResultCount").html("")
+    // view.selected = spaceMap.spaceID
+    // alert(inputSearchValue);
+    if ( inputSearchValue != '' && validateIPaddress(inputSearchValue) && (currentView === "fixtures" || currentView === "sensors")) {
+
+        var fixtures = main.getCurrentFloor().fixtures;
+        searchedFixture = Object.keys(fixtures).filter(function (fixtureKey) {
+            return fixtures[fixtureKey].name === inputSearchValue || fixtures[fixtureKey].address.split(":")[0] === inputSearchValue || (fixtures[fixtureKey].address === inputSearchValue)
+        })
+
+        if (searchedFixture.length && !searchInputValueByClick()) {
+            //$("#searchResultCount").html(searchedFixture.length + " are selected.")
+            views["fixtures"].multiSelected = searchedFixture;
+            views["fixtures"].selected = searchedFixture[0];
+            searchedFixture.forEach(function (fixture) {
+                selectAssociatedSpacesToDevice(fixture,'fixtures', true);
+                updateDeviceTab()
+            });
+        } else {
+            views["fixtures"].multiSelected = [];
+            views["fixtures"].selected = '';
+        }
+
+        var sensors = main.getCurrentFloor().sensors;
+        searchedSensor = Object.keys(sensors).filter(function (sensorKey) {
+            return sensors[sensorKey].name === inputSearchValue || sensors[sensorKey].address.split(":")[0] === inputSearchValue || (sensors[sensorKey].address === inputSearchValue)
+        })
+        if (searchedSensor.length && !searchInputValueByClick()) {
+            //$("#searchResultCount").html(searchedSensor.length + " are selected.")
+            views["sensors"].multiSelected = searchedSensor;
+            views["sensors"].selected = searchedSensor[0];
+            searchedSensor.forEach(function (sensor) {
+                selectAssociatedSpacesToDevice(sensor, 'sensors', true);
+                updateDeviceTab()
+            });
+        } else {
+            views["sensors"].multiSelected = [];
+            views["sensors"].selected = '';
+        }
+    } else {
+        var layerToView = {General: 'general', User: "user", Information: 'beacon'};
+        var buildingID = main.getState()
+            .currentBuildingID
+        var floorID = main.getState()
+            .currentFloorID;
+        views[currentView].multiSelected = [];
+        views[currentView].selected = '';
+        var spaces = main.getCurrentController().spaces;
+       var searchedSpacename = Object.keys(spaces).filter(function(spaceID) {
+            var space = spaces[spaceID]
+            // alert(space.name)
+            // var space = spaces[spaceID];
+            if(space.name.toUpperCase() === inputSearchValue.toUpperCase() && layerToView[space.layer] === currentView){
+            var mapID = space.getMapRefsByIDs(buildingID, floorID)[0]
+            selectSpace({spaceID: spaceID, mapID: mapID}, true );
+            return true;
+            }
+            return false;
+        })
+
+             if(searchedSpacename.length){
+                 searchedSpacename.forEach(function (spaceID) {
+                     var space = spaces[spaceID]
+                     views["fixtures"].multiSelected = space.activeFixtures;
+                     views["fixtures"].selected = space.activeFixtures[0];
+                     views["sensors"].multiSelected = space.activeSensors;
+                     views["sensors"].selected = space.activeSensors[0];
+                 })
+             }
+    }
+    updateSearchresultDescriptionOnTabClick()
+
+}
+
+/**
+ * Update mapOffsetX and mapOffsetY for the current view (used to keep track of the relative position of the
+ * mouse when you start dragging a zone)
+ *
+ * @method     spaceUpdateOffsets
+ * @param      {number}  mGridX  mouse grid x-coord
+ * @param      {number}  mGridY  mouse grid y-coord
+ */
+function spaceUpdateOffsets(mGridX, mGridY) {
+    var view = views[currentView]
+    if (view.selected !== '' && view.selectedMap !== '') {
+        zoneContextMenu.items[1].enabled = true
+        zoneContextMenu.items[0].enabled = true
+        var map = main.getCurrentController()
+            .spaces[view.selected].maps[view.selectedMap]
+        view.mapOffsetX = mGridX - map._x
+        view.mapOffsetY = mGridY - map._y
+    } else {
+        view.mapOffsetX = view.mapOffsetY = -1
+        zoneContextMenu.items[1].enabled = false
+        zoneContextMenu.items[0].enabled = false
+    }
+}
+
+function placeNewSpace(fromGridX, fromGridY, toGridX, toGridY) {
+    var buildingID = main.getState()
+        .currentBuildingID
+    var floorID = main.getState()
+        .currentFloorID
+    var controllerID = main.getState()
+        .currentControllerID
+    var view = views[currentView]
+    var mapOptions = {
+        building: buildingID,
+        floor: floorID,
+        // orientation: $('input[name="orientation-' + currentView + '"]').val()
+    }
+    var tab = $('#' + currentView)
+    var spaceOptions = {}
+    var spaceObj
+    var mapRefObj
+    spaceOptions.type = tab.find('.type-radio:checked')
+        .val()
+    zoneContextMenu.items[0].enabled = false;
+    zoneContextMenu.items[1].enabled = false;
+    // view.selected = currentView === 'general' ?
+    //     main.getProject().addGeneralSpace(spaceOptions, buildingID, controllerID) :
+    //     main.getProject().addUserSpace(spaceOptions, buildingID, controllerID)
+    if(currentView === 'general'){
+        zoneContextMenu.items[0].enabled = true
+      view.selected = main.getProject().addGeneralSpace(spaceOptions, buildingID, controllerID)
+    }else if(currentView === 'beacon'){
+        zoneContextMenu.items[0].enabled = true
+      view.selected = main.getProject().addBeaconSpace(spaceOptions, buildingID, controllerID)
+    }else if(currentView === 'user'){
+        zoneContextMenu.items[0].enabled = true;
+        zoneContextMenu.items[1].enabled = true;
+      view.selected = main.getProject().addUserSpace(spaceOptions, buildingID, controllerID)
+    }
+    spaceObj = main.getCurrentController()
+        .spaces[view.selected];
+    view.selectedMap = spaceObj.addMapRef(mapOptions)
+    mapRefObj = spaceObj.maps[view.selectedMap]
+    mapRefObj.resolve(fromGridX, fromGridY, toGridX, toGridY)
+
+    main.getProject()
+        .allocateDevicesInSpace(view.selected, view.selectedMap, buildingID,
+            floorID, controllerID)
+    view.updateTab()
+}
+
+function isCurrentSpaceOverlapping(fromGridX, fromGridY, toGridX, toGridY,spaceObj, addCurrentSpace){
+    var view = views[currentView];
+    var spaces = main.getCurrentController()
+        .spaces;
+    var spaceObjList = []
+    if(!addCurrentSpace) {
+       spaceObjList = Object.keys(spaces || []).filter(function(spaceId) {
+            return spaces[spaceId].layer === oldSpaceMap.spaceType && spaces[spaceId].amBXSpace !== spaceObj.amBXSpace && spaces[spaceId].maps[view.selectedMap].floor === spaceObj.maps[view.selectedMap].floor;
+        });
+    } else {
+        spaceObjList = Object.keys(spaces || []).filter(function(spaceId) {
+            return spaces[spaceId].layer === oldSpaceMap.spaceType && spaces[spaceId].maps[oldSpaceMap.mapId].floor === spaceObj.maps[oldSpaceMap.mapId].floor;
+        });
+    }
+
+    if(spaceObjList.length === 0) {
+        return false;
+    }
+    return spaceObjList.some(function(spaceId) {
+        var spaceMap = spaces[spaceId].maps[oldSpaceMap.mapId];
+        var spaceFromGridX = spaceMap.locX;
+        var spaceToGridX = spaceMap.locX + spaceMap.width;
+        var spaceFromGridY= spaceMap.locY;
+        var spaceToGridY = spaceMap.locY + spaceMap.height;
+        // if((() && (fromGridY > spaceFromGridY || fromGridY < spaceToGridY))
+        //         || ((fromGridX > spaceFromGridX || fromGridX < spaceToGridX) && ())
+        //     || ((toGridX > spaceFromGridX || toGridX < spaceToGridX) && (fromGridY > spaceFromGridY || fromGridY < spaceToGridY))
+        //  || ((toGridX > spaceFromGridX || toGridX < spaceToGridX) && (toGridY > spaceFromGridY || toGridY < spaceToGridY))){
+        //
+        //         return true;
+        //
+        // }
+        if((fromGridX > spaceFromGridX && fromGridX < spaceToGridX && fromGridY > spaceFromGridY && fromGridY < spaceToGridY) ||
+            (toGridX > spaceFromGridX && toGridX < spaceToGridX && fromGridY > spaceFromGridY && fromGridY < spaceToGridY) ||
+            (toGridX > spaceFromGridX && toGridX < spaceToGridX && toGridY > spaceFromGridY && toGridY < spaceToGridY) ||
+            (fromGridX > spaceFromGridX && fromGridX < spaceToGridX && toGridY > spaceFromGridY && toGridY < spaceToGridY) ||
+            (spaceFromGridX > fromGridX && spaceToGridX < toGridX && spaceFromGridY > fromGridY && spaceToGridY < toGridY) ||
+            (spaceFromGridX > fromGridX && spaceToGridX < toGridX && spaceFromGridY > fromGridY && spaceToGridY < toGridY) ||
+            (spaceToGridX > fromGridX && spaceFromGridX < toGridX && spaceToGridY > fromGridY && spaceFromGridY < toGridY) ||
+            (spaceToGridX > fromGridX && spaceFromGridX < toGridX && spaceToGridY > fromGridY && spaceFromGridY < toGridY)) {
+            return true;
+        }
+        return false;
+    })
+
+
+}
+
+function storeOldSpaceState(space) {
+    var mapRef = space && Object.keys(space.maps)[0];
+    var view = views[currentView]
+    oldSpaceMap.spaceId = view.selected;
+    oldSpaceMap.map = Object.assign({}, space.maps[mapRef]);
+    oldSpaceMap.mapId = view.selectedMap || mapRef;
+    oldSpaceMap.spaceType = space.layer;
+}
+
+function storeOldDeviceState(deviceID){
+    var devices = main.getCurrentFloor()[currentView];
+    if(deviceID &&  devices[deviceID]){
+        var selectedDevice = devices[deviceID];
+        oldDeviceMap.gridX = selectedDevice.gridX;
+        oldDeviceMap.gridY = selectedDevice.gridY;
+        oldDeviceMap.name = selectedDevice.name;
+        oldDeviceMap.view = currentView;
+    }
+}
+
+function spaceMouseDown(event) {
+    var md = mouse.mouseDown
+    var view = views[currentView]
+    var spaceHere = findSpace(md.gridX, md.gridY)
+    if (spaceHere.spaceID !== view.selected) {
+        selectSpace(spaceHere)
+    }
+
+    if (view.selectedMap !== '' && view.selected) {
+        var currentSpace = main.getCurrentController().spaces[view.selected];
+        var map = currentSpace.maps[view.selectedMap];
+    storeOldSpaceState(currentSpace);
+    view.isResizing = map.getVertices()
+            .some(function(vertex, index, verts) {
+                if (md.gridX === vertex.x && md.gridY === vertex.y) {
+                    var anchorIndex = (index + 2) % 4
+                    var anchor = verts[anchorIndex]
+                    switch (index) {
+                        case 0:
+                            view.anchorX = anchor.x + 1
+                            view.anchorY = anchor.y + 1
+                            break
+
+                        case 1:
+                            view.anchorX = anchor.x
+                            view.anchorY = anchor.y + 1
+                            break
+
+                        case 2:
+                            view.anchorX = anchor.x
+                            view.anchorY = anchor.y
+                            break
+
+                        case 3:
+                            view.anchorX = anchor.x + 1
+                            view.anchorY = anchor.y
+                            break
+                    }
+                    return true
+                }
+            })
+    }
+    spaceUpdateOffsets(md.gridX, md.gridY)
+}
+
+
+function updateDeviceAxisOnSpaceMove(selectedView,offsetX,offsetY){
+    var userSpace =  main.getCurrentController().spaces[selectedView.selected];
+    var activeFixtures = userSpace.activeFixtures;
+    var activeSensors = userSpace.activeSensors;
+    activeFixtures.forEach(function(fixtureID) {
+        var device = main.getCurrentFloor()['fixtures'][fixtureID]
+        if(device)
+            device.moveTo(device.gridX + offsetX, device.gridY+offsetY)
+    })
+    activeSensors.forEach(function(sensorID) {
+        var device = main.getCurrentFloor()['sensors'][sensorID]
+        if(device)
+            device.moveTo(device.gridX + offsetX, device.gridY+offsetY)
+    })
+    // console.log('ccc'+userSpace,activeFixtures,activeSensors);
+}
+
+
+function checkAnyDeviceAtNewAxis(spaceObj, newX, newY) {
+    var fixtures = main.getCurrentFloor().fixtures;
+    var sensors = main.getCurrentFloor().sensors;
+    var activeFixtures = spaceObj.activeFixtures;
+    var activeSensors = spaceObj.activeSensors;
+
+    var fixtureOverlapped = Object.keys(fixtures).some(function(fixtureId) {
+        if(activeFixtures.includes(fixtureId)) {
+            return false;
+        }
+        var fixture = fixtures[fixtureId];
+        return activeFixtures.some(function(userSpaceFixtureID) {
+            if(( fixtures[userSpaceFixtureID].gridX+ newX )=== fixture.gridX && (fixtures[userSpaceFixtureID].gridY+ newY) === fixture.gridY) {
+                return true;
+            }
+            return false;
+        })
+    })
+    if(fixtureOverlapped) {
+        return true;
+    }
+    return Object.keys(sensors).some(function(sensorId) {
+        if(activeSensors.includes(sensorId)) {
+            return false;
+        }
+        var sensor = sensors[sensorId];
+        return activeSensors.some(function(userSpaceSensorID) {
+            if(sensors[userSpaceSensorID].gridX+newX === sensor.gridX && sensors[userSpaceSensorID].gridY+ newY === sensor.gridY) {
+                return true;
+            }
+            return false;
+        })
+    })
+}
+
+
+
+function checkDeviceOverlappingForSpaces(selectedView,spaceObj) {
+    var userSpace =  main.getCurrentController().spaces[selectedView.selected] || spaceObj;
+    var activeFixtures = userSpace.activeFixtures;
+    var activeSensors = userSpace.activeSensors;
+    var fixturesOverlap = checkDeviceOverlapping(activeFixtures, 'fixtures')
+    if(fixturesOverlap) {
+        return true;
+    } else {
+        checkDeviceOverlapping(activeSensors, 'sensors')
+    }
+}
+
+function checkDeviceOverlapping(selectedDevices, view){
+    // if(document.getElementById("smartDragFeature").checked === true){
+    var allDevices = main.getCurrentFloor()[view];
+    //var sensors = main.getCurrentFloor().sensors;
+    var selectedDeviceList = Object.keys(allDevices).map(function(deviceId) {
+        if(selectedDevices.includes(deviceId)) {
+            return allDevices[deviceId];
+        }
+        return null;
+    }).filter(Boolean);
+
+    // var userSpaceSensorsList = Object.keys(sensors).map(function(sensorId) {
+    //     if(activeSensors.includes(sensorId)) {
+    //         return sensors[sensorId];
+    //     }
+    //         return null;
+    //
+    // }).filter(Boolean);
+    return Object.keys(allDevices).some(function(deviceId) {
+        if(selectedDevices.includes(deviceId)) {
+            return false;
+        }
+        var device = allDevices[deviceId];
+        return selectedDeviceList.some(function(sDevice) {
+            if(device.gridX === sDevice.gridX && device.gridY === sDevice.gridY) {
+                return true;
+            }
+            return false;
+        })
+    })
+    /* if(fixtureOverlapped) {
+         return true;
+     }
+     return Object.keys(sensors).some(function(sensorId) {
+         if(activeSensors.includes(sensorId)) {
+             return false;
+         }
+         var sensor = sensors[sensorId];
+         return userSpaceSensorsList.some(function(userSpaceSensor) {
+             if(userSpaceSensor.gridX === sensor.gridX && userSpaceSensor.gridY === sensor.gridY) {
+                 return true;
+             }
+             return false;
+         })
+     })*/
+    // }
+}
+
+function spaceMouseMove(event) {
+    var view = views[currentView]
+    if (mouse.isDragging && mouse.isLeftButtonDown) {
+        if (view.isResizing) {
+            var map = main.getCurrentController()
+                .spaces[view.selected].maps[view.selectedMap]
+            if (mouse.gridX >= 0 && mouse.gridY >= 0) {
+                map.resolve(view.anchorX, view.anchorY, mouse.gridX, mouse.gridY)
+            }
+        } else if (view.mapOffsetX >= 0 && view.mapOffsetY >= 0) {
+            var map = main.getCurrentController()
+                .spaces[view.selected].maps[view.selectedMap]
+            var floor = main.getCurrentFloor()
+            var gridW = floor._gridW
+            var gridH = floor._gridH
+            var gridX = map._x
+            var gridY = map._y
+            var toX = mouse.gridX - view.mapOffsetX
+            var toY = mouse.gridY - view.mapOffsetY
+            map._x = toX >= 0 ?
+                Math.min(toX, gridW - map._width) :
+                0
+            map._y = toY >= 0 ?
+                Math.min(toY, gridH - map._height) :
+                0
+            var offsetX = map._x-gridX;
+            var offsetY = map._y-gridY;
+            if(currentView === 'user'){
+            if(document.getElementById("smartDragFeature-user").checked === true){
+                updateDeviceAxisOnSpaceMove(view,offsetX,offsetY)
+            }
+            }
+            if(currentView === 'general'){
+                if(document.getElementById("smartDragFeature-general").checked === true){
+                    updateDeviceAxisOnSpaceMove(view,offsetX,offsetY)
+                }
+            }
+            if(currentView === 'beacon'){
+                if(document.getElementById("smartDragFeature-beacon").checked === true){
+                    updateDeviceAxisOnSpaceMove(view,offsetX,offsetY)
+                }
+            }
+
+        }
+    }
+}
+
+
+
+function spaceMouseUp(event) {
+    var view = views[currentView]
+    if (event.button === 0 && !mouse.isMiddleButtonDown) {
+        // if()
+        if (mouse.isDragging) {
+            if (view.selected === '' || view.selectedMap === '') {
+                var mX = mouse.gridX
+                var mY = mouse.gridY
+                var mdX = mouse.mouseDown.gridX
+                var mdY = mouse.mouseDown.gridY
+                    // var spaceHere = findSpace(mX, mY)
+                if (mX >= 0 && mY >= 0 && mdX >= 0 && mdY >= 0) {
+                    var w = Math.abs(mdX - mX)
+                    var h = Math.abs(mdY - mY)
+                    if (w >= 5 && h >= 3) {
+                        placeNewSpace(mdX, mdY, mX, mY)
+                    }
+                }
+            } else  {
+              var spaceObj = main.getCurrentController()
+                    .spaces[view.selected];
+               // view.selectedMap = spaceObj.addMapRef(mapOptions)
+                var mapRefObj = spaceObj.maps[oldSpaceMap.mapId];
+                var isDevicesOverlapped = checkDeviceOverlappingForSpaces(view);
+                if(currentView === 'user'){
+                    if(document.getElementById("smartDragFeature-user").checked === true){
+                        if ((currentView === 'user' && mapRefObj && isCurrentSpaceOverlapping(mapRefObj._x, mapRefObj._y, mapRefObj._x + mapRefObj._width, mapRefObj._y + mapRefObj._height, spaceObj))
+                            || isDevicesOverlapped) {
+                            if (isDevicesOverlapped) {
+                                alert("Devices are overlapping, userspace is resetting into previous state")
+                            } else {
+                                alert("Userspaces overlapping is not allowed resetting into previous state")
+                            }
+
+                            //spaceUpdateOffsets(oldSpaceMap.map._x, oldSpaceMap.map._y);
+                            if (document.getElementById("smartDragFeature-user").checked === true) {
+                                updateDeviceAxisOnSpaceMove(view, oldSpaceMap.map.locX - mapRefObj._x, oldSpaceMap.map.locY - mapRefObj._y)
+                            }
+                            mapRefObj.resolve(oldSpaceMap.map.locX, oldSpaceMap.map.locY, oldSpaceMap.map.width + oldSpaceMap.map.locX, oldSpaceMap.map.height + oldSpaceMap.map.locY)
+                            // main.getProject()
+                            //     .allocateDevicesInSpace(view.selected, view.selectedMap, buildingID,
+                            //         floorID, controllerID)
+                            // view.updateTab()
+
+                        }
+                    }
+                }
+                if(currentView === 'general'){
+                    if(document.getElementById("smartDragFeature-general").checked === true){
+                        if ((currentView === 'general' && mapRefObj && isCurrentSpaceOverlapping(mapRefObj._x, mapRefObj._y, mapRefObj._x + mapRefObj._width, mapRefObj._y + mapRefObj._height, spaceObj))
+                            || isDevicesOverlapped) {
+                            if (isDevicesOverlapped) {
+                                alert("Devices are overlapping, userspace is resetting into previous state")
+                            } else {
+                                alert("Userspaces overlapping is not allowed resetting into previous state")
+                            }
+
+                            //spaceUpdateOffsets(oldSpaceMap.map._x, oldSpaceMap.map._y);
+                            if (document.getElementById("smartDragFeature-general").checked === true) {
+                                updateDeviceAxisOnSpaceMove(view, oldSpaceMap.map.locX - mapRefObj._x, oldSpaceMap.map.locY - mapRefObj._y)
+                            }
+                            mapRefObj.resolve(oldSpaceMap.map.locX, oldSpaceMap.map.locY, oldSpaceMap.map.width + oldSpaceMap.map.locX, oldSpaceMap.map.height + oldSpaceMap.map.locY)
+                            // main.getProject()
+                            //     .allocateDevicesInSpace(view.selected, view.selectedMap, buildingID,
+                            //         floorID, controllerID)
+                            // view.updateTab()
+
+                        }
+                    }
+                }
+                if(currentView === 'beacon'){
+                    if(document.getElementById("smartDragFeature-beacon").checked === true){
+                        if ((currentView === 'beacon' && mapRefObj && isCurrentSpaceOverlapping(mapRefObj._x, mapRefObj._y, mapRefObj._x + mapRefObj._width, mapRefObj._y + mapRefObj._height, spaceObj))
+                            || isDevicesOverlapped) {
+                            if (isDevicesOverlapped) {
+                                alert("Devices are overlapping, userspace is resetting into previous state")
+                            } else {
+                                alert("Userspaces overlapping is not allowed resetting into previous state")
+                            }
+
+                            //spaceUpdateOffsets(oldSpaceMap.map._x, oldSpaceMap.map._y);
+                            if (document.getElementById("smartDragFeature-beacon").checked === true) {
+                                updateDeviceAxisOnSpaceMove(view, oldSpaceMap.map.locX - mapRefObj._x, oldSpaceMap.map.locY - mapRefObj._y)
+                            }
+                            mapRefObj.resolve(oldSpaceMap.map.locX, oldSpaceMap.map.locY, oldSpaceMap.map.width + oldSpaceMap.map.locX, oldSpaceMap.map.height + oldSpaceMap.map.locY)
+                            // main.getProject()
+                            //     .allocateDevicesInSpace(view.selected, view.selectedMap, buildingID,
+                            //         floorID, controllerID)
+                            // view.updateTab()
+
+                        }
+                    }
+                }
+                // if(document.getElementById("smartDragFeature").checked === true) {
+                //
+                // }
+                var state = main.getState()
+                var project = main.getProject()
+                var buildingID = state.currentBuildingID
+                var floorID = state.currentFloorID
+                project.allocateDevicesOnFloor(buildingID, floorID)
+            }
+
+        }
+    }
+    view.mapOffsetX = -1
+    view.mapOffsetY = -1
+    view.anchorX = -1
+    view.anchorY = -1
+    view.isResizing = false
+}
+
+
+
+
+/**
+ * Context menu event handler for general and user tabs
+ *
+ * @param      {Event}  event   The event
+ */
+function spaceContextMenu(event) {
+
+    var view = views[currentView]
+    // var spaceHere = findSpace(mouse.gridX, mouse.gridY)
+    // if (spaceHere.spaceID !== view.selected) {
+    //     selectSpace(spaceHere)
+    // }
+  //  if (spaceHere.spaceID !== '') {
+        zoneContextMenu.popup(event.pageX, event.pageY)
+   // }
+}
+
+function zoneKeyUp(event) {
+    var view = views[currentView]
+    var map = main.getCurrentController()
+        .spaces[view.selected].maps[view.selectedMap]
+    var gridW = main.getCurrentFloor()
+        ._gridW
+    var gridH = main.getCurrentFloor()
+        ._gridH
+    // if (event.ctrlKey === false){  //Without control key
+    //   switch (event.keyCode) {
+    //     case 38: // 'ArrowUp':
+    //
+    //         break
+    //     case 40: // 'ArrowDown':
+    //
+    //         break
+    //     case 37: // 'ArrowLeft':
+    //
+    //         var md = mouse.mouseDown
+    //         var view = views[currentView].selected
+    //         var deviceF = view.split("_")
+    //         var deviceFA = parseInt(deviceF[2]);
+    //         var deviceFB = deviceFA - 1
+    //         if (deviceFB > 0){
+    //           view = deviceF[0]+"_"+deviceF[1]+"_"+deviceFB
+    //           views[currentView].selected = view;
+    //           if(deviceF[0] == 'gen'){
+    //             deviceF[0] = 'general'
+    //           }
+    //           if(deviceF[0] == 'inf'){
+    //             deviceF[0] = 'beacon'
+    //           }
+    //
+    //           updateSpaceTab(deviceF[0])
+    //         }else{
+    //           var controller = main.getCurrentController()
+    //           if(deviceF[0] === 'user'){
+    //             var spaceObj = controller.getUserSpaces()
+    //           }else if(deviceF[0] === 'inf'){
+    //             var spaceObj = controller.getBeaconSpaces()
+    //           }else{
+    //             var spaceObj = controller.getGeneralSpaces()
+    //           }
+    //           var spaceObjs = Object.keys(spaceObj)
+    //           view = deviceF[0]+"_"+deviceF[1]+"_"+ spaceObjs.length
+    //           views[currentView].selected = view;
+    //           if(deviceF[0] == 'gen'){
+    //             deviceF[0] = 'general'
+    //           }
+    //           if(deviceF[0] == 'inf'){
+    //             deviceF[0] = 'beacon'
+    //           }
+    //           updateSpaceTab(deviceF[0])
+    //         }
+    //
+    //         break
+    //     case 39: // 'ArrowRight':
+    //
+    //         var md = mouse.mouseDown
+    //         var view = views[currentView].selected
+    //         var deviceF = view.split("_")
+    //         var deviceFA = parseInt(deviceF[2]);
+    //         var deviceFB = deviceFA + 1
+    //         var controller = main.getCurrentController()
+    //         if(deviceF[0] === 'user'){
+    //           var spaceObj = controller.getUserSpaces()
+    //         }else if(deviceF[0] === 'inf'){
+    //           var spaceObj = controller.getBeaconSpaces()
+    //         }else{
+    //           var spaceObj = controller.getGeneralSpaces()
+    //         }
+    //         var spaceObjs = Object.keys(spaceObj)
+    //         if (deviceFB <= spaceObjs.length){
+    //           view = deviceF[0]+"_"+deviceF[1]+"_"+deviceFB
+    //           views[currentView].selected = view;
+    //           if(deviceF[0] == 'gen'){
+    //             deviceF[0] = 'general'
+    //           }
+    //           if(deviceF[0] == 'inf'){
+    //             deviceF[0] = 'beacon'
+    //           }
+    //           updateSpaceTab(deviceF[0])
+    //         }else{
+    //           deviceFB = deviceFB- spaceObjs.length
+    //           view = deviceF[0]+"_"+deviceF[1]+"_"+ deviceFB
+    //           views[currentView].selected = view;
+    //           if(deviceF[0] == 'gen'){
+    //             deviceF[0] = 'general'
+    //           }
+    //           if(deviceF[0] == 'inf'){
+    //             deviceF[0] = 'beacon'
+    //           }
+    //           updateSpaceTab(deviceF[0])
+    //         }
+    //         break
+    //   }
+    // }
+    // else{  //With control key
+    //   switch (event.keyCode) {
+    //     case 38: // 'ArrowUp':
+    //         console.log(map._y)
+    //         if (map._y > 0) {
+    //             map._y -= 1
+    //         }
+    //         break
+    //     case 40: // 'ArrowDown':
+    //         console.log(map._y)
+    //         if ((map._y + map._height) < gridW) {
+    //             map._y += 1
+    //         }
+    //         break
+    //     case 37: // 'ArrowLeft':
+    //         if (map._x > 0) {
+    //             map._x -= 1
+    //         }
+    //         break
+    //     case 39: // 'ArrowRight':
+    //         if ((map._x + map._width) < gridW) {
+    //             map._x += 1
+    //         }
+    //         break
+    //   }
+    // }
+}
+
+function fixtureKeyUp(event) {
+    if (views.fixtures.selected !== '') {
+        var fixture = main.getCurrentFloor()
+            .fixtures[views.fixtures.selected]
+        var gridW = main.getCurrentFloor()
+            ._gridW
+        var gridH = main.getCurrentFloor()
+                ._gridH
+       // $("#searchResultCount").html("")
+        // if (event.ctrlKey === false){ //Without control key
+        //   switch (event.keyCode) {
+        //     case 38: // 'ArrowUp':
+        //         break
+        //     case 40: // 'ArrowDown':
+        //         break
+        //     case 37: // 'ArrowLeft':
+        //         var md = mouse.mouseDown
+        //         var view = views[currentView].selected
+        //         var deviceF = view.split("-")
+        //         var deviceFA = deviceF[2].split("_")
+        //         deviceFA[1] = parseInt(deviceFA[1]);
+        //         var deviceFB = deviceFA[1] - 1
+        //         if (deviceFB > 0){
+        //           deviceF[2] = deviceFA[0]+"_"+deviceFB
+        //           view = deviceF[0]+"-"+deviceF[1]+"-"+deviceF[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }else{
+        //           var fixtures = main.getCurrentFloor().fixtures
+        //           var fixturesIDs = Object.keys(fixtures)
+        //           deviceFB = fixturesIDs.length
+        //           deviceF[2] = deviceFA[0]+"_"+deviceFB
+        //           view = deviceF[0]+"-"+deviceF[1]+"-"+deviceF[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }
+        //         break
+        //     case 39: // 'ArrowRight':
+        //         var md = mouse.mouseDown
+        //         var view = views[currentView].selected
+        //         var deviceF = view.split("-")
+        //         var deviceFA = deviceF[2].split("_")
+        //         deviceFA[1] = parseInt(deviceFA[1]);
+        //         var deviceFB = deviceFA[1] + 1
+        //         var fixtures = main.getCurrentFloor().fixtures
+        //         var fixturesIDs = Object.keys(fixtures)
+        //         if(deviceFB <= fixturesIDs.length){
+        //           deviceF[2] = deviceFA[0]+"_"+deviceFB
+        //           view = deviceF[0]+"-"+deviceF[1]+"-"+deviceF[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }else{
+        //           deviceFB = deviceFB - fixturesIDs.length
+        //           deviceF[2] = deviceFA[0]+"_"+deviceFB
+        //           view = deviceF[0]+"-"+deviceF[1]+"-"+deviceF[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }
+        //
+        //
+        //         break
+        //   }
+        // }
+        // else{  //With control key
+        //   switch (event.keyCode) {
+        //     case 38: // 'ArrowUp':
+        //         if (fixture._y > 0) {
+        //             fixture._y -= 1
+        //         }
+        //         break
+        //     case 40: // 'ArrowDown':
+        //         if (fixture._y  < gridH) {
+        //             fixture._y += 1
+        //         }
+        //         break
+        //     case 37: // 'ArrowLeft':
+        //         if (fixture._x > 0) {
+        //             fixture._x -= 1
+        //         }
+        //         break
+        //     case 39: // 'ArrowRight':
+        //       if (fixture._x  < gridW) {
+        //           fixture._x += 1
+        //       }
+        //       break
+        //   }
+        // }
+    }
+}
+
+function sensorKeyUp(event) {
+    if (views.sensors.selected !== '') {
+        var sensor = main.getCurrentFloor()
+            .sensors[views.sensors.selected]
+        var gridW = main.getCurrentFloor()
+            ._gridW
+        var gridH = main.getCurrentFloor()
+                ._gridH
+       // $("#searchResultCount").html("")
+        // if(event.ctrlKey === false){  //Without control key
+        //   switch (event.keyCode) {
+        //     case 38: // 'ArrowUp':
+        //         break
+        //     case 40: // 'ArrowDown':
+        //         break
+        //     case 37: // 'ArrowLeft':
+        //         var md = mouse.mouseDown
+        //         var view = views[currentView].selected
+        //         var deviceS = view.split("-")
+        //         var deviceSA = deviceS[2].split("_")
+        //         deviceSA[1] = parseInt(deviceSA[1]);
+        //         var deviceSB = deviceSA[1] - 1
+        //         if (deviceSB > 0){
+        //           deviceS[2] = deviceSA[0]+"_"+deviceSB
+        //           view = deviceS[0]+"-"+deviceS[1]+"-"+deviceS[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }else{
+        //           var sensors = main.getCurrentFloor().sensors
+        //           var sensorsIDs = Object.keys(sensors)
+        //           deviceSB = sensorsIDs.length
+        //           deviceS[2] = deviceSA[0]+"_"+deviceSB
+        //           view = deviceS[0]+"-"+deviceS[1]+"-"+deviceS[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }
+        //
+        //         break
+        //     case 39: // 'ArrowRight':
+        //         var md = mouse.mouseDown
+        //         var view = views[currentView].selected
+        //         var deviceS = view.split("-")
+        //         var deviceSA = deviceS[2].split("_")
+        //         deviceSA[1] = parseInt(deviceSA[1]);
+        //         var deviceSB = deviceSA[1] + 1
+        //         var sensors = main.getCurrentFloor().sensors
+        //         var sensorsIDs = Object.keys(sensors)
+        //         if(deviceSB <= sensorsIDs.length){
+        //           deviceS[2] = deviceSA[0]+"_"+deviceSB
+        //           view = deviceS[0]+"-"+deviceS[1]+"-"+deviceS[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }else{
+        //           deviceSB = deviceSB - sensorsIDs.length
+        //           deviceS[2] = deviceSA[0]+"_"+deviceSB
+        //           view = deviceS[0]+"-"+deviceS[1]+"-"+deviceS[2]
+        //           views[currentView].selected = view;
+        //           updateDeviceTab()
+        //         }
+        //         break
+        //   }
+        // }
+        // else{  //With control key
+        //   switch (event.keyCode) {
+        //       case 38: // 'ArrowUp':
+        //           if (sensor._y > 0) {
+        //               sensor._y -= 1
+        //           }
+        //           break
+        //       case 40: // 'ArrowDown':
+        //           if (sensor._y  < gridH) {
+        //               sensor._y += 1
+        //           }
+        //           break
+        //       case 37: // 'ArrowLeft':
+        //           if (sensor._x > 0) {
+        //               sensor._x -= 1
+        //           }
+        //           break
+        //       case 39: // 'ArrowRight':
+        //           if (sensor._x  < gridW) {
+        //               sensor._x += 1
+        //           }
+        //           break
+        //     }
+        // }
+    }
+}
+
+function findDevice(gridX, gridY) {
+    var buildingID = main.getState()
+        .currentBuildingID
+    var floorID = main.getState()
+        .currentFloorID
+    var controllerID = main.getState()
+        .currentControllerID
+    var md = mouse.mouseDown
+    var deviceID = ''
+    if (currentView === 'fixtures') {
+        deviceID = main.getProject()
+            .findFixture(md.gridX, md.gridY, buildingID, floorID, controllerID)
+    } else if (currentView === 'sensors') {
+        deviceID = main.getProject()
+            .findSensor(md.gridX, md.gridY, buildingID, floorID, controllerID)
+    }
+    return deviceID
+}
+
+
+
+function deviceMouseDown(event) {
+    var md = mouse.mouseDown
+    var view = views[currentView]
+    var deviceID = findDevice(md.gridX, md.gridY)
+    if(!deviceID){
+        view.multiSelected = []
+    }
+    if (deviceID !== view.selected) {
+        view.selected = deviceID
+        storeOldDeviceState(view.selected)
+        updateDeviceTab()
+    }
+}
+
+
+function isDevicesMovingOutOfRange(offsetX, offsetY) {
+    var selectedDevices = views[currentView].multiSelected || [views[currentView].selected];
+  //  console.log(offsetX,offsetY)
+    return selectedDevices.some(function(deviceId) {
+        if(deviceId) {
+            var device = main.getCurrentFloor()[currentView][deviceId]
+            var gridX = +device.gridX + +offsetX;
+            var gridY = +device.gridY + +offsetY;
+            if(gridX < 0 || gridX >= 100 || gridY < 0 || gridY >= 100 ) {
+                return true;
+            }
+        }
+
+    })
+}
+
+function moveSelectedDevices(mapRef) {
+    var deviceID = views[currentView].selected
+    var selectedDevices = views[currentView].multiSelected || [views[currentView].selected];
+    var device = main.getCurrentFloor()[currentView][deviceID]
+    var offsetX = mapRef.gridX - device.gridX;
+    var offsetY = mapRef.gridY - device.gridY;
+   // console.log(offsetY,offsetY,isDevicesMovingOutOfRange(offsetX, offsetY))
+    if(isDevicesMovingOutOfRange(offsetX, offsetY)) {
+      //  console.log(offsetY,offsetY,isDevicesMovingOutOfRange(offsetX, offsetY))
+        return;
+    }
+    // console.log(offsetX,offsetY, selectedDevices)
+    selectedDevices.forEach(function(deviceId) {
+
+        if (mapRef.gridX >= 0 && mapRef.gridY >= 0) {
+            var device = main.getCurrentFloor()[currentView][deviceId]
+            if(device) {
+                var gridX = +device.gridX + +offsetX;
+                var gridY = +device.gridY + +offsetY;
+                // console.log(device.gridX,device.gridY,event.button)
+                device.moveTo(gridX, gridY)
+            }
+
+        }
+    })
+
+}
+
+
+function moveSingleSelectedDevices(mapRef) {
+    var deviceID = views[currentView].selected
+    var device = main.getCurrentFloor()[currentView][deviceID]
+    var offsetX = mapRef.gridX - device.gridX;
+    var offsetY = mapRef.gridY - device.gridY;
+    if (mapRef.gridX >= 0 && mapRef.gridY >= 0) {
+       // var deviceID = views[currentView].selected
+       // var device = main.getCurrentFloor()[currentView][deviceId]
+        if(device) {
+            var gridX = +device.gridX + +offsetX;
+            var gridY = +device.gridY + +offsetY;
+            // console.log(device.gridX,device.gridY,event.button)
+            device.moveTo(gridX, gridY)
+        }
+
+    }
+}
+
+function deviceMouseMove(event) {
+    var deviceID = views[currentView].selected
+
+    if(event.ctrlKey && event.altKey && mouse.isDragging && deviceID !== ''){
+        moveSelectedDevices(mouse)
+        //storeOldDeviceState(deviceID)
+
+    } else if (mouse.isDragging && deviceID !== '') {
+        if (mouse.gridX >= 0 && mouse.gridY >= 0) {
+            var device = main.getCurrentFloor()[currentView][deviceID]
+            device.moveTo(mouse.gridX, mouse.gridY)
+        }
+    }
+}
+
+function deviceMouseUp(event) {
+    var view = views[currentView]
+    if (event.button === 0 && !event.ctrlKey) {
+        if (mouse.isDragging && view.selected !== '') {
+
+      //  } else {
+            // console.log("HI....")
+            var selectedSingleDevices  = views[currentView].selected;
+            var isSingleDevicesOverlapped  = checkDeviceOverlapping(selectedSingleDevices, currentView);
+            if(isSingleDevicesOverlapped ) {
+                alert("Devices are overlapping, ressetting it to previous state.")
+                moveSingleSelectedDevices(oldDeviceMap);
+            } else {
+                view.allocateSelectedDevice()
+                updateDeviceTab()
+            }
+        }
+    } else if(event.ctrlKey && event.altKey) {
+        // console.log("HI....")
+        var selectedDevices = views[currentView].multiSelected || [views[currentView].selected];
+        var isDevicesOverlapped = checkDeviceOverlapping(selectedDevices, currentView);
+        if(isDevicesOverlapped) {
+            alert("Devices are overlapping, ressetting it to previous state.")
+            moveSelectedDevices(oldDeviceMap);
+        }
+    }
+}
+
+function deviceDoubleClick(event) {
+    if (views[currentView].selected === '') {
+        var gridX = mouse.mouseDown.gridX
+        var gridY = mouse.mouseDown.gridY
+        if (gridX >= 0 && gridY >= 0) {
+            var newDeviceID = placeNewDevice(gridX, gridY)
+            views[currentView].selected = newDeviceID
+            updateDeviceTab()
+        }
+    }
+}
+
+/**
+ * Contextmenu event handler for fixture and sensor tabs. Shows popup menu when user right-clicks on a device
+ *
+ * @param      {Event}  event    The event
+ * @param      {Object}  menuObj  The  relevant menu object (nw.gui.Menu) for the current view
+ */
+function deviceContextMenu(event, menuObj) {
+    var view = views[currentView]
+    var deviceID = findDevice(mouse.gridX, mouse.gridY)
+    if (deviceID !== view.selected) {
+        view.selected = deviceID
+        updateDeviceTab()
+    }
+    if (deviceID !== '') {
+        menuObj.popup(event.pageX, event.pageY)
+    }
+}
+
+function updateDeviceTab() {
+    var elementIDBase = currentView.substring(0, currentView.length - 1)
+    var deviceID = views[currentView].selected
+    if (deviceID !== '') {
+        var deviceMap = main.getCurrentFloor()[currentView]
+        if (deviceMap.hasOwnProperty(deviceID)) {
+            var selectedDevice = deviceMap[deviceID]
+            var controllers = main.getProject()
+                .controllers
+            var controllerName = ''
+            if (controllers.hasOwnProperty(selectedDevice._controller)) {
+                controllerName = controllers[selectedDevice._controller]._name
+            }
+            $('#' + elementIDBase + '-name')
+                .val(selectedDevice._name)
+                // .prop('disabled', false)
+            $('#' + elementIDBase + '-ip')
+                .setIPVal(selectedDevice._address)
+                .prop('disabled', false)
+            $('#' + elementIDBase + '-type')
+                .val(selectedDevice._type)
+                .prop('disabled', false)
+                .trigger('change')
+            $('#' + elementIDBase + '-controller')
+                .text(controllerName)
+            $('#' + elementIDBase + '-protocol')
+                .val(selectedDevice._protocol)
+                .prop('disabled', false)
+            $('#' + elementIDBase + 'color-space')
+                .val(selectedDevice._colorSpace)
+                .prop('disabled', false)
+            $('#' + elementIDBase + '-zone')
+                .text(main.getCurrentController()
+                    .spaces[selectedDevice._space]._name)
+            $('.type-radio[value=' + selectedDevice._role + ']')
+                .trigger('click')
+            if (selectedDevice._type === 'EnOcean') {
+                $('#enocean-field-' + elementIDBase)
+                    .show()
+                $('#enocean-id-' + elementIDBase)
+                    .val(selectedDevice.userData)
+            } else {
+                $('#enocean-field-' + elementIDBase)
+                    .hide()
+            }
+            if (currentView === 'sensors') {
+                $('#sensor-polling-rate')
+                    .prop('disabled', false)
+                    .val(selectedDevice._pollingRate)
+            }
+            if (currentView === 'fixtures') {
+                $('#fixture-color-space')
+                    .prop('disabled', false)
+                    .val(selectedDevice._colorSpace)
+            }
+
+            // WARN-MAK: developer is "dynamically" creating conditions using current view (fixture/sensor)
+            // WARN-MAK: developer is string concatening div id tags to the view to change values
+
+            // WARN-MAK: updateDeviceTab() is being called by mouse actions. check call stack
+
+            // NOTE-MAK: adding property value for coapIdentifier in similar fashion. i.e. coap-identifier-fixture, coap-identifier-sensor
+            $('#coap-identifier-' + elementIDBase)
+                .val(selectedDevice._id)
+        }
+    } else {
+        $('#' + elementIDBase + '-name')
+            .val('')
+            // .prop('disabled', true)
+        $('#' + elementIDBase + '-ip')
+            .setIPVal('')
+            .prop('disabled', true)
+        $('#' + elementIDBase + '-controller')
+            .text('')
+        $('#' + elementIDBase + '-zone')
+            .text('')
+        $('#' + elementIDBase + '-type')
+            // .trigger('change')
+            .prop('disabled', true)
+            // $('#enocean-field-' + elementIDBase).hide()
+        $('#' + elementIDBase + '-protocol')
+            .prop('disabled', true)
+        $('#' + elementIDBase + '-color-space')
+            .prop('disabled', true)
+        if (currentView === 'sensors') {
+            $('#sensor-polling-rate')
+                .val(0)
+                .prop('disabled', true)
+        }
+        $('#enocean-id-' + elementIDBase)
+            .val('')
+
+
+        // WARN-MAK: this is false condition if the user clicks out of fixture
+
+        // WARN-MAK: developer is "dynamically" creating conditions using current view (fixture/sensor)
+        // WARN-MAK: developer is string concatening div id tags to the view to change values
+
+        // WARN-MAK: updateDeviceTab() is being called by mouse actions. 'mousedown' event and mouseDown() chained function. check call stack.
+
+        // NOTE-MAK: adding empty value for coapIdentifier in similar fashion. i.e. coap-identifier-fixture, coap-identifier-sensor
+        $('#coap-identifier-' + elementIDBase)
+            .val('')
+
+    }
+}
+
+function createDeviceOption(device, gridX, gridY, deviceType) {
+    var state = main.getState()
+    var project = main.getProject()
+    var protocolDefaultPortNums = {
+        'MolexUDPv1': 9760,
+        'CoAPv1': 5683,
+        'CoAPv1.1': 5683 // NOTE-MAK: added default CoAPv1.1 port
+    }
+    if(!project._baseIPCurrent) {
+        if(deviceType === 'fixture') {
+            project._baseIPCurrent = project._baseIPFixtures
+        }else {
+            project._baseIPCurrent = project._baseIPSensors
+        }
+    }
+
+    var newIP = main.incrementIP(project._baseIPCurrent)
+    project._baseIPCurrent = newIP
+    var controllerID = state.currentControllerID
+    var deviceOptions = {
+        gridX: gridX,
+        gridY: gridY,
+        name: device.name,
+        type: device.type,
+        role: device.role,
+        address: newIP,
+        controller: controllerID,
+        colorSpace: device.colorSpace,
+        protocol: device.protocol
+    }
+    return deviceOptions;
+}
+
+function placeNewDevice(gridX, gridY) {
+    var state = main.getState()
+    var project = main.getProject()
+    var buildingID = state.currentBuildingID
+    var floorID = state.currentFloorID
+    var controllerID = state.currentControllerID
+    var deviceID = ''
+    var deviceOptions
+    var elementIDBase = currentView.substring(0, currentView.length - 1)
+    var role = $('#' + currentView)
+        .find('.type-radio:checked')
+        .val()
+    var type = $('#' + elementIDBase + '-type')
+        .val()
+    var protocol = $('#' + elementIDBase + '-protocol')
+        .val()
+    var newIP = project._baseIPCurrent
+    var protocolDefaultPortNums = {
+        'MolexUDPv1': 9760,
+        'CoAPv1': 5683,
+        'CoAPv1.1': 5683 // NOTE-MAK: added default CoAPv1.1 port
+    }
+    if (role === undefined || role === '') {
+        role = currentView === 'fixtures' ?
+            'Ambient' :
+            'AL'
+    }
+    if (project._baseIPCurrent === '') {
+        if (currentView === 'fixtures') {
+            project._baseIPCurrent = project._baseIPFixtures
+        } else {
+            project._baseIPCurrent = project._baseIPSensors
+        }
+    }
+    newIP = main.incrementIP(project._baseIPCurrent)
+    newIP = newIP.split(':')[0] + ':' + protocolDefaultPortNums[protocol]
+    project._baseIPCurrent = newIP
+    deviceOptions = {
+        gridX: gridX,
+        gridY: gridY,
+        name: $('#' + elementIDBase + '-name')
+            .val(),
+        type: type,
+        role: role,
+        address: newIP,
+        controller: controllerID,
+        colorSpace: $('#' + elementIDBase + '-color-space')
+            .val(),
+        protocol: $('#' + elementIDBase + '-protocol')
+            .val()
+    }
+    if (type === 'EnOcean') {
+        deviceOptions.userData = $('#enocean-id-' + elementIDBase)
+            .val()
+    }
+    if (currentView === 'fixtures') {
+        deviceID = main.getProject()
+            .addFixture(deviceOptions, buildingID, floorID, controllerID)
+    } else if (currentView === 'sensors') {
+        deviceID = main.getProject()
+            .addSensor(deviceOptions, buildingID, floorID, controllerID)
+    }
+
+    return deviceID
+}
+
+function updateProjectView() {
+    var headerInfo
+    var project = main.getProject()
+    var building = main.getCurrentBuilding()
+    var controller = main.getCurrentController()
+        //Populate project settings input fields with stuff from views
+    $('#project-name')
+        .val(project._name);
+    $('#project-customer')
+        .val(project._client);
+    $('#project-contact')
+        .val(project._contact);
+    $('input:radio[name=project-status][value=' + project._stage + ']')
+        .trigger('click');
+    $('#building-name')
+        .val(building._name);
+    $('#building-location')
+        .val(building._location);
+    $('#controller-name')
+        .val(controller._name);
+    $('#controller-ip')
+        .setIPVal(controller._address);
+    $('#fixture-start-ip')
+        .setIPVal(project._baseIPFixtures);
+    $('#sensor-start-ip')
+        .setIPVal(project._baseIPSensors);
+    updateFloorListView()
+    updateHeader()
+}
+
+function updateHeader() {
+    // Update main window header
+    var headerInfo = ['<em>',
+        main.getCurrentBuilding()
+        ._name,
+        ', ',
+        main.getCurrentFloor()
+        ._name,
+        '</em>'
+    ]
+    $('#main-window-header')
+        .html('<strong>Design Tool: </strong>')
+        .append(headerInfo.join(''))
+}
+
+function updateFloorListView() {
+    var floorTemplate = $('#floor-view-item')
+        .html()
+    var floors = main.getCurrentBuilding()
+        .floors
+    var floorDir = path.join('./', main.floorPlanPath, main.getProject()
+        ._name, main.getState()
+        .currentBuildingID)
+    $('.floor-list-view, .select-floor')
+        .empty()
+    $('.select-floor')
+        .attr('floorplan', '')
+    $('.copy-fixture-select')
+        .find('option')
+        .remove()
+        .end()
+        .append('<option value=""></option>');
+    Object.keys(floors)
+        .forEach(function(floorID) {
+            var floorObj = floors[floorID]
+                // Items in project settings menu
+            var item = $(floorTemplate)
+                .clone(true)
+                .find('.delete-floor-btn')
+                .attr('data-floor-id', floorID)
+                .end()
+                .find('.view-floor-radio')
+                .attr('id', 'view-floor-' + floorID)
+                .attr('value', floorID)
+                .end()
+                .find('.floor-name')
+                .attr('name', 'floor-name-' + floorID)
+                .attr('id', 'floor-name-' + floorID)
+                .val(floorObj._name)
+                .attr('data-floor-id', floorID)
+                .end()
+                .find('.floorplan-file-input')
+                .attr('name', 'floorplan-' + floorID)
+                .attr('id', 'floorplan-' + floorID)
+                .attr('data-floor-id', floorID)
+                .next('label')
+                .attr('for', 'floorplan-' + floorID)
+                .end()
+                .end()
+                .appendTo('.floor-list-view')
+                // Options in floor select menu
+            var option = $('<option value=""></option>')
+                .val(floorID)
+                .text(floorObj._name)
+                .appendTo('.select-floor')
+            var copySelectOption = $('<option value=""></option>')
+                .val(floorID)
+                .text(floorObj._name)
+                .appendTo('.copy-fixture-select')
+            if (floorID === main.getState()
+                .currentFloorID) {
+                item
+                    .find('.floor-name')
+                    .addClass('selected')
+                    .end()
+                    .find('.view-floor-radio')
+                    .prop('checked', true)
+                    .end()
+                    .find('.floorplan-icon')
+                    .attr('src', 'css/lib/images/MultifloorColour.png')
+                option.prop('selected', true)
+            } else {
+                item.find('.floorplan-icon')
+                    .attr('src', 'css/lib/images/MultifloorWhite.png')
+            }
+        })
+}
+
+function setCurrentFloor(floorID) {
+    main.setCurrentFloor(floorID)
+    renderer.loadCurrentFloor()
+    views.reset()
+    views[currentView].updateTab()
+    updateProjectView()
+    updateHeader()
+}
+
+function applyProjectSettings() {
+    var building = main.getCurrentBuilding()
+    var controller = main.getCurrentController()
+        // Apply project settings
+    main.getProject()
+        ._name = $('#project-name')
+        .val();
+    main.getProject()
+        ._client = $('#project-customer')
+        .val();
+    main.getProject()
+        ._contact = $('#project-contact')
+        .val();
+    main.getProject()
+        ._stage = $('input:radio[name=project-status]:checked')
+        .val();
+    building._name = $('#building-name')
+        .val();
+    building.location = $('#building-location')
+        .val();
+    //views.projectSettings.floorName = $('#floor-name').val();
+    controller._name = $('#controller-name')
+        .val();
+    controller._address = $('#controller-ip')
+        .getIPVal();
+    // views.projectSettings.fixtureStartAddress = $('#fixture-start-ip').val();
+    // views.projectSettings.sensorStartAddress = $('#sensor-start-ip').val();
+    main.getProject()
+        ._baseIPFixtures = $('#fixture-start-ip')
+        .getIPVal()
+    main.getProject()
+        ._baseIPSensors = $('#sensor-start-ip')
+        .getIPVal()
+        // Reset views
+    views.reset()
+
+    // Hide settings modal
+    updateHeader()
+    $('#project-settings-modal')
+        .hide()
+}
+
+function onProjectSettingsDone(event) {
+    applyProjectSettings()
+    views[currentView].updateTab()
+}
+
+function saveStateToDefault() {
+    main.saveState()
+}
+
+function saveStateToFile(file) {
+    main.saveState(file)
+}
+
+function onProjectUpload(err) {
+    if (err) {
+        var msg = err.message ? err.message : ''
+        return window.alert('Project upload failed\r\n' + msg)
+    }
+    window.alert('Project upload complete\r\n')
+}
+
+function onProjectDownload(err) {
+    if (err) {
+        var msg = err.message ? err.message : ''
+        return window.alert('Project download failed\r\n')
+    }
+    window.alert('Project download complete')
+    updateProjectView()
+    views.reset()
+    views[currentView].updateTab()
+    renderer.loadCurrentFloor()
+}
+
+//On window close, write views to default file
+win.on('close', function() {
+    // main.saveState(undefined, function() {
+    //     win.close(true)
+    // })
+    if (confirm('Changes are not saved, Are you sure want to exit')) {
+        // Save it!
+        win.close(true);
+    } else {
+        // Do nothing!
+
+    }
+})
+
+//Window menu bar
+var windowMenu = new gui.Menu({
+    type: 'menubar'
+})
+var fileMenu, viewMenu, allocateMenu, selectedMenu, settingsMenu;
+
+// File
+
+//     New Project
+//     Load Project          (3/4/8 - To Named Project file)
+//     Save Project          (3/4/8 - From Named project file)
+//     Export                    (8/9 - Write out fixture files etc.)
+//     Import DWG          (17)
+//     Import Floorplan    (7 - For now loads image of standard type TBC)
+fileMenu = new gui.Menu();
+fileMenu.append(new gui.MenuItem({
+    label: 'New',
+    click: function() {
+        if (confirm(
+                'You will lose any unsaved work. Are you sure you want to proceed?'
+            )) {
+            main.newProject()
+            views.reset()
+            renderer.loadCurrentFloor()
+            updateProjectView()
+            $('#project-settings-modal')
+                .show()
+            $('#default-grid-settings')
+                .find('.input-grid-width')
+                .val(100)
+                .end()
+                .find('.input-grid-height')
+                .val(100)
+                .end()
+                .show()
+            zoneContextMenu.items[2].enabled = false;
+            zoneContextMenu.items[0].enabled = false;
+            zoneContextMenu.items[1].enabled = false;
+
+            // WARN-MAK: did not require scheduleTab.js in index.js. still loading on index.html
+            // NOTE-MAK: remove all schedules
+            var scheduler = Scheduler.singleton
+            scheduler.removeAllSchedules()
+        }
+    },
+    enabled: true
+}));
+fileMenu.append(new gui.MenuItem({
+    label: 'Open',
+    click: function() {
+            if (confirm(
+                    'Any unsaved changes to the current project you are editing will be lost'
+                )) {
+                $('#load-project')
+                    .trigger('click')
+            }
+        }
+        //enabled: false
+}));
+fileMenu.append(new gui.MenuItem({
+    label: 'Save As',
+    click: function() {
+        $('#save-project')
+            .trigger('click');
+    }
+}));
+
+var uploadMenuItem = new gui.MenuItem({
+    label: 'Upload',
+    click: function() {
+        // $('#export-project').trigger('click');
+        var projectID = 'Molex'
+        if (confirm(
+                'Caution: This will replace the current installed project')) {
+            var controllerIP = main.getCurrentController()
+                ._address
+            main.uploadProject(controllerIP, projectID, onProjectUpload)
+        }
+    }
+})
+
+// fileMenu.append(downloadMenuItem);
+
+var downloadMenuItem = new gui.MenuItem({
+    label: 'Download',
+    click: function() {
+        var projectID = 'Molex'
+        if (confirm(
+                'Any unsaved changes to the current project you are editting will be lost'
+            )) {
+            var userInputIP = prompt('Controller IP Address:', main.getCurrentController()
+                ._address)
+            if (userInputIP !== null) {
+                var controllerIP = main.ipify(userInputIP)
+                main.downloadProject(controllerIP, projectID, onProjectDownload)
+            }
+        }
+    }
+})
+
+// fileMenu.append(uploadMenuItem);
+
+// NOTE-MAK: Create a submenu as the 2nd level menu
+var networkSubMenu = new nw.Menu({ type: 'menubar' });
+networkSubMenu.append(uploadMenuItem);
+networkSubMenu.append(downloadMenuItem);
+
+
+// NOTE-MAK: Create and append the 1st level menu to the menubar
+fileMenu.append(new nw.MenuItem({
+    label: 'Network',
+    submenu: networkSubMenu
+}));
+
+fileMenu.append(new gui.MenuItem({
+    label: 'Print',
+    click: function() {
+        gui.Window.open('printview.html', {
+            frame: true,
+            width: 800,
+            height: 600,
+            position: 'center'
+        }, function(printWin) {
+            var printDataURL = renderer.printViewDataURL()
+            printWin.on('loaded', function() {
+                // var self = this
+                var doc = printWin.window.document
+                var image = doc.getElementById('print-image')
+                    // image.onload = function () {
+                    // printWin.print()
+                    // }
+                image.setAttribute('src', printDataURL)
+                    // printWin.print()
+                    // printWin.close()
+            })
+        })
+    }
+}))
+
+/*
+fileMenu.append(new gui.MenuItem({
+  label: 'Export Devices',
+  click: function() {
+    $('#export-device-list').trigger('click');
+  }
+}));
+*/
+/*
+fileMenu.append(new gui.MenuItem({
+  label: 'Import DWG',
+  click: function() {},
+  enabled: false
+}));
+*/
+// fileMenu.append(new gui.MenuItem({
+//   label: 'Import Floorplan',
+//   click: function() {
+//     $('#open-file-floorplan').trigger('click');
+//   }
+// }));
+fileMenu.append(new gui.MenuItem({
+    label: 'Exit',
+    click: function() {
+        if (confirm('Are you sure you want to exit?')) {
+            win.close()
+        }
+    }
+}))
+
+// View
+
+//     Floor                       (15 - Dropdown submenu list)
+//     Grid Settings
+// viewMenu = new gui.Menu();
+// viewMenu.append(new gui.MenuItem({
+//   label: 'Floor',
+//   click: function() {},
+//   enabled: false
+// }));
+// viewMenu.append(new gui.MenuItem({
+//   label: 'Grid Settings',
+//   click: function() {},
+//   enabled: false
+// }));
+
+// Selected
+
+//     Set as Custom   (User Zones only, sets the values as the default for custom version)
+//     Delete                (2)
+//     Move Up            (If needed - reorder layers)
+//     Move Down
+//     Show/Hide
+/*
+selectedMenu = new gui.Menu();
+selectedMenu.append(new gui.MenuItem({
+  label: 'Set as Custom',
+  enabled: false
+}));
+selectedMenu.append(new gui.MenuItem({
+  label: 'Delete',
+  enabled: false
+}));
+selectedMenu.append(new gui.MenuItem({
+  label: 'Move Up',
+  enabled: false
+}));
+selectedMenu.append(new gui.MenuItem({
+  label: 'Move Down',
+  enabled: false
+}));
+selectedMenu.append(new gui.MenuItem({
+  label: 'Show/Hide',
+  enabled: false
+}));
+*/
+// Settings
+
+//     IP Range          (To use in Auto filling the fields)
+//     Controllers       (What to connect to)
+//     01/16 : Project Settings
+settingsMenu = new gui.Menu();
+//settingsMenu.append(new gui.MenuItem({
+//  label: 'IP Range',
+//  enabled: false
+//}));
+//settingsMenu.append(new gui.MenuItem({
+//  label: 'Controllers',
+//  enabled: false
+//}));
+settingsMenu.append(new gui.MenuItem({
+        label: 'Project Settings',
+        click: function() {
+            updateProjectView()
+            $('#project-settings-modal')
+                .show();
+        }
+    }))
+    // settingsMenu.append(new gui.MenuItem({
+    //   label: 'Floor Settings',
+    //   click: function () {
+    //     $('#open-floor-settings').trigger('click')
+    //   }
+    // }))
+
+windowMenu.append(new gui.MenuItem({
+        label: 'File',
+        submenu: fileMenu,
+    }))
+    // windowMenu.append(new gui.MenuItem({
+    //   label: 'View',
+    //   submenu: viewMenu,
+    // }));
+    //windowMenu.append(new gui.MenuItem({
+    //  label: 'Allocate',
+    //  submenu: allocateMenu,
+    //}));
+    /*
+    windowMenu.append(new gui.MenuItem({
+      label: 'Selected',
+      submenu: selectedMenu,
+    }));
+    */
+windowMenu.append(new gui.MenuItem({
+    label: 'Settings',
+    submenu: settingsMenu
+}));
+
+win.menu = windowMenu;
+
+$.fn.buttonIconOnly = function() {
+    return this.map(function(index, element) {
+        var btn, iconName;
+        btn = $(element);
+        iconName = btn.data('icon');
+        btn.button({
+            text: false,
+            icons: {
+                primary: iconName
+            }
+        });
+        return this;
+    });
+};
+
+/**
+ * Get the full IP address string from multiple number inputs
+ *
+ * @return     {string}  IP address.
+ */
+$.fn.getIPVal = function() {
+    var self = $(this)
+    var ipAddr = [0, 0, 0, 0]
+    var ipPort = self.find('.ip-port')
+        .val()
+    self.find('.ip-num')
+        .each(function(index, element) {
+            ipAddr[index] = element.value
+        })
+        // .join('.')
+    return main.ipify(ipAddr.join('.') + ':' + ipPort)
+}
+
+/**
+ * Set the values of IP address inputs using input string
+ *
+ * @param      {string}  strIP   IP address string
+ * @return     {object} jQuery self
+ */
+$.fn.setIPVal = function(strIP) {
+    var self = $(this)
+    var components = strIP ?
+        strIP.split(':') : ['', '']
+    var address = components[0].split('.')
+    var port = components[1] !== '' ? parseInt(components[1], 10) : ''
+    self.find('.ip-num')
+        .map(function(index, element) {
+            element.value = address[index] !== '' ? parseInt(address[index], 10) :
+                ''
+        })
+        // .val(address)
+    self.find('.ip-port')
+        .val(port)
+    return self
+}
+
+// Init main process
+main.init()
+
+$(function() {
+    renderer.init()
+
+    updateProjectView()
+    $('#fixture-start-ip')
+        .setIPVal(main.getProject()
+            ._baseIPFixtures)
+    $('#sensor-start-ip')
+        .setIPVal(main.getProject()
+            ._baseIPSensors)
+
+    // updateFloorSettings()
+    updateHeader()
+
+    $('#floor-settings')
+        .hide()
+
+    $('#default-grid-settings')
+        .hide()
+
+    // NOTE-MAK: changing version scheme
+    if (pjson.branch != '') {
+      $('#app-version-number')
+          .text('v.' + pjson.version + "_" + pjson.branch)
+    }else{
+      $('#app-version-number')
+          .text('v.' + pjson.version + pjson.branch)
+    }
+
+
+    if (main.getState()
+        .projectFile !== '') {
+        $('#project-settings-modal')
+            .hide()
+    }
+
+
+    //Window menu stuff
+
+    $('#save-project')
+        .click(function(event) {
+            this.value = null
+        })
+        .change(function(event) {
+            if (this.value) {
+                main.exportProject($(this)
+                    .val(),
+                    function() {
+                        window.alert('Project saved')
+                    })
+            }
+
+        })
+
+    $('#load-project')
+        .click(function(event) {
+            this.value = null
+        })
+        .change(function(event) {
+            var file = $(this)
+                .val()
+            main.loadProject($(this).val(),
+                function() {
+                    updateProjectView()
+                    // updateFloorSettings()
+                    views.reset()
+                    views[currentView].updateTab()
+                    $('#project-settings-modal')
+                        .show()
+                    renderer.loadCurrentFloor()
+                })
+        })
+
+    $('#open-file-floorplan')
+        /*.click(function(event) {
+              this.value = undefined
+            })*/
+        .change(function(event) {
+            if (this.value !== undefined || this.value !== null) {
+                onOpenFloorPlanFile($(this)
+                    .val());
+            }
+        });
+
+    $('#export-project')
+        .click(function(event) {
+            this.value = null
+        })
+        .change(function(event) {
+            if (this.value) {
+                main.exportProject($(this)
+                    .val());
+            }
+
+        });
+
+    $('#project-settings-done')
+        .click(onProjectSettingsDone)
+
+    function ipifyThis(event) {
+        var currentValue = $(this)
+            .getIPVal()
+        $(this)
+            .val(main.setIPVal(currentValue))
+    }
+
+    $('#controller-ip')
+        .blur(ipifyThis)
+    $('#fixture-start-ip')
+        .blur(ipifyThis)
+    $('#sensor-start-ip')
+        .blur(ipifyThis)
+
+    // Floor Settings
+    // $('#open-floor-settings').click(function(event) {
+    //   event.preventDefault()
+    //   $('#floor-settings').show()
+    // })
+
+    $('#floor-settings-done')
+        .on('click', function(event) {
+            var modal = $('#floor-settings')
+            var gridWidthVal = parseInt(modal.find('.input-grid-width')
+                .val(), 10)
+            var gridHeightVal = parseInt(modal.find('.input-grid-height')
+                .val(), 10)
+            if (gridWidthVal !== NaN && gridWidthVal > 0 && gridHeightVal !==
+                NaN && gridHeightVal > 0) {
+                var floorOptions = {
+                    gridW: parseInt(gridWidthVal),
+                    gridH: parseInt(gridHeightVal)
+                }
+                var state = main.getState()
+                var newFloorID = main.getProject()
+                    .addFloor(floorOptions, state.currentBuildingID, state.currentControllerID)
+                updateFloorListView()
+                modal.hide()
+            } else {
+                alert('Please enter valid numbers for grid dimensions.')
+            }
+        })
+
+
+    $('#paste-floor-btn')
+        .on('click', function(event) {
+            var selectedFloorId = $('.copy-fixture-select').find("option:selected").val().trim();
+            var selectedFloor = main.getCurrentBuilding().floors[selectedFloorId];
+            var state = main.getState();
+            var newFloorID = main.getProject().addFloor(selectedFloor, state.currentBuildingID, state.currentControllerID)
+            main.getCurrentController().spaces;
+                		for(var spaceKey in main.getCurrentController().spaces) {
+                	    			for(var mapKey in main.getCurrentController().spaces[spaceKey].maps) {
+                    	    				if(main.getCurrentController().spaces[spaceKey].maps[mapKey].floor === selectedFloorId) {
+                        	    					var copyMap = Object.assign({}, main.getCurrentController().spaces[spaceKey].maps[mapKey]);
+                        	    					copyMap.floor = newFloorID;
+                        	    					main.getCurrentController().spaces[spaceKey].addMapRef(copyMap);
+                            				}
+                    	    			}
+                	    		}
+            updateFloorListView();
+            $('.paste-floor-btn').attr('disabled', 'disabled');
+        })
+    $('.copy-fixture-select')
+        .on('change', function(e) {
+            var selectedOptionValue = $(this).find("option:selected").val().trim();
+            if(selectedOptionValue && selectedOptionValue !== "") {
+                e.preventDefault();
+                $('.paste-floor-btn').removeAttr('disabled');
+            } else {
+                $('.paste-floor-btn').attr('disabled', 'disabled');
+            }
+
+        })
+
+    $('.floor-list-view')
+        .on('input', '.floor-name', function(event) {
+            var target = $(event.target)
+            var floorID = target.attr('data-floor-id')
+            var floorObj = main.getCurrentBuilding()
+                .floors[floorID]
+            var selectMenuOption = $('.select-floor')
+                .find('option[value="' + floorID + '"]')
+            var name = target.val()
+            floorObj._name = name
+            selectMenuOption.text(name)
+            if (floorID = main.getState()
+                .currentFloorID) {
+                updateHeader()
+            }
+        })
+        .on('change', function(event) {
+            var target = $(event.target)
+            if (target.hasClass('floorplan-file-input')) {
+                var floorID = target.attr('data-floor-id')
+                var buildingID = main.getState()
+                    .currentBuildingID
+                var file = target.val()
+
+                function onImportError() {}
+
+                function onImportSuccess() {
+                    setCurrentFloor(floorID)
+                }
+                main.importFloorPlan(file, floorID, buildingID, onImportSuccess,
+                    onImportError)
+            } else if (target.hasClass('view-floor-radio')) {
+                var newFloorID = target.val()
+                if (main.getCurrentBuilding()
+                    .floors.hasOwnProperty(newFloorID)) {
+                    setCurrentFloor(newFloorID)
+                } else {}
+            }
+        })
+        .on('click', '.delete-floor-btn', function(event) {
+            var floorID = $(this)
+                .attr('data-floor-id')
+            var state = main.getState()
+            var buildingID = state.currentBuildingID
+            if (Object.keys(main.getCurrentBuilding()
+                    .floors)
+                .length > 1) {
+                if (confirm('Are you sure you want to delete this floor?')) {
+                    if (floorID === state.currentFloorID) {
+                        var floorIDs = Object.keys(main.getCurrentBuilding()
+                            .floors)
+                        var newFloorIndex = (floorIDs.indexOf(floorID) + 1) %
+                            floorIDs.length
+                        main.setCurrentFloor(floorIDs[newFloorIndex])
+                    }
+                    main.deleteFloor(floorID, buildingID, function() {
+                        updateFloorListView()
+                        updateHeader()
+                    })
+                }
+            }
+        })
+
+    $('#add-floor-btn')
+        .on('click', function(event) {
+            $('#floor-settings')
+                .find('.input-grid-width')
+                .val(100)
+                .end()
+                .find('.input-grid-height')
+                .val(100)
+                .end()
+                .show()
+        })
+
+    $('.select-floor')
+        .on('change', function(event) {
+            var newFloorID = $(this)
+                .val()
+            if (main.getCurrentBuilding()
+                .floors.hasOwnProperty(newFloorID)) {
+                setCurrentFloor(newFloorID)
+            } else {
+                $(this)
+                    .val(main.getState()
+                        .currentFloorID)
+            }
+        })
+
+    //Fixtures
+
+    $('#fixture-color-space')
+        .on('change', function(event) {
+            var value = $(this)
+                .val();
+
+            var fixturesList = (views[currentView].multiSelected || []).filter(Boolean).length > 0 ? views[currentView].multiSelected : [views.selected]
+            if(fixturesList.length > 2){
+            fixturesList.forEach(function(deviceID) {
+                if (deviceID) {
+                    var fixture = main.getCurrentFloor()
+                        .fixtures[deviceID]
+                    fixture._colorSpace = value;
+                }
+            });
+           } else if(fixturesList.length ){
+                 var fixtureID = views.fixtures.selected
+                if (fixtureID !== '') {
+                    var fixture = main.getCurrentFloor()
+                        .fixtures[fixtureID]
+                    fixture._colorSpace = value;
+                }
+            }
+        });
+
+    fixtureContextMenu = new gui.Menu();
+    fixtureContextMenu.append(new gui.MenuItem({
+        label: 'Delete fixture'
+    }));
+    fixtureContextMenu.items[0].click = function() {
+        //Delete selected fixture
+        var view = views[currentView]
+        var fixtureID = views.fixtures.selected
+        var buildingID = main.getState()
+            .currentBuildingID
+        var floorID = main.getState()
+            .currentFloorID
+        if(view.multiSelected.length > 0){
+            for(var i = 0; i< view.multiSelected.length;i++){
+                if(view.multiSelected[i]){
+                    main.getProject()
+                        .deleteFixture(view.multiSelected[i], buildingID, floorID)
+                }
+            }
+        } else {
+            main.getProject()
+                .deleteFixture(views.fixtures.selected, buildingID, floorID)
+        }
+        views.fixtures.selected = ''
+    }
+
+    //Sensors
+
+    $('#sensor-polling-rate')
+        .on('input', function(event) {
+            var value = $(this)
+                .val()
+
+            var sensorsList = (views[currentView].multiSelected || []).filter(Boolean).length > 0 ? views[currentView].multiSelected : [views.selected]
+            if(sensorsList.length > 2){
+            sensorsList.forEach(function(deviceID) {
+            if (deviceID) {
+                var sensor = main.getCurrentFloor()
+                    .sensors[deviceID]
+                sensor._pollingRate = parseInt(value)
+            }
+            });
+            } else if(sensorsList.length){
+                 var sensorID = views.sensors.selected
+                if (sensorID !== '') {
+                    var sensor = main.getCurrentFloor()
+                        .sensors[sensorID]
+                    sensor._pollingRate = parseInt(value)
+                }
+            }
+        })
+
+    sensorContextMenu = new gui.Menu();
+    sensorContextMenu.append(new gui.MenuItem({
+        label: 'Delete sensor'
+    }));
+    sensorContextMenu.items[0].click = function() {
+        var view = views[currentView]
+        var sensorID = views.sensors.selected
+        var buildingID = main.getState()
+            .currentBuildingID
+        var floorID = main.getState()
+            .currentFloorID
+        if(view.multiSelected.length > 0){
+            for(var i = 0; i< view.multiSelected.length;i++){
+                if(view.multiSelected[i]){
+                    main.getProject()
+                        .deleteSensor(view.multiSelected[i], buildingID, floorID)
+                }
+            }
+        } else {
+            main.getProject()
+                .deleteSensor(views.sensors.selected, buildingID, floorID)
+        }
+        views.sensors.selected = ''
+    }
+
+    // Device common event listeners
+    $('input[name=fixture-role], input[name=sensor-role]')
+        .on('change', function(event) {
+            var view = views[currentView]
+            var role = $(this)
+                .val()
+            if (view.selected !== '') {
+                var device = main.getCurrentFloor()[currentView][view.selected]
+                device._role = role
+            }
+            $('#' + currentView)
+                .find('.indicator')
+                .attr('role', role)
+        })
+
+    $('.device-name')
+        .on('input', function(event) {
+            var view = views[currentView]
+            if (view.selected !== '') {
+                var device = main.getCurrentFloor()[currentView][view.selected]
+                var name = $(this)
+                    .val()
+                device._name = name
+            }
+        })
+
+    // $('.device-type')
+    //     .on('change', function(event) {
+    //         var value = $(this)
+    //             .val()
+    //         var deviceID = views[currentView].selected
+    //         var tab = $('#' + currentView)
+    //             // TODO-MAK: remove enocean field.
+    //             // device property 'id' can only have one value
+    //             // independent of enocean-field. enOceanField, enocean-field, enocean-field-sensor
+    //             // enocean-id-sensor" id="enocean-id-sensor" class="enocean-id" ...
+    //         var enOceanField = tab.find('.enocean-field')
+    //         var device = main.getCurrentFloor()[currentView][deviceID]
+    //         if (deviceID !== '' && device._type !== value) {
+    //             device._type = value
+    //             if (value !== 'EnOcean') {
+    //                 device.userData = ''
+    //             }
+    //         }
+    //         if (value === 'EnOcean') {
+    //             enOceanField.show()
+    //             tab.addClass('tall')
+    //         } else {
+    //             enOceanField.hide()
+    //             tab.removeClass('tall')
+    //         }
+    //         tab.find('.ip-input-container')
+    //             .setIPVal(device._address)
+    //         main.getProject()
+    //             ._baseIPCurrent = device._address
+    //     })
+
+
+    $('.device-type')
+        .on('change', function(event) {
+            var value = $(this)
+                .val()
+            var deviceList = (views[currentView].multiSelected || []).filter(Boolean).length > 0 ? views[currentView].multiSelected : [views.selected]
+
+           // var deviceID = views[currentView].selected
+            var tab = $('#' + currentView)
+            // TODO-MAK: remove enocean field.
+            // device property 'id' can only have one value
+            // independent of enocean-field. enOceanField, enocean-field, enocean-field-sensor
+            // enocean-id-sensor" id="enocean-id-sensor" class="enocean-id" ...
+            var enOceanField = tab.find('.enocean-field')
+            if(deviceList.length > 2){
+            deviceList.forEach(function(deviceID) {
+            if(deviceID){
+            var device = main.getCurrentFloor()[currentView][deviceID]
+            if (device._type !== value) {
+                device._type = value
+                tab.find('.ip-input-container')
+                    .setIPVal(device._address)
+                main.getProject()
+                    ._baseIPCurrent = device._address
+                if (value !== 'EnOcean') {
+                    device.userData = ''
+                }
+            }
+            }
+            });
+            } else if(deviceList.length){
+                var deviceID = views[currentView].selected
+                if(deviceID !== ''){
+                    var device = main.getCurrentFloor()[currentView][deviceID]
+                    if (device._type !== value) {
+                        device._type = value
+                        tab.find('.ip-input-container')
+                            .setIPVal(device._address)
+                        main.getProject()
+                            ._baseIPCurrent = device._address
+                        if (value !== 'EnOcean') {
+                            device.userData = ''
+                        }
+                    }
+                }
+            }
+            if (value === 'EnOcean') {
+                enOceanField.show()
+                tab.addClass('tall')
+            } else {
+                enOceanField.hide()
+                tab.removeClass('tall')
+            }
+        })
+
+    $('.device-protocol')
+        .on('change', function(event) {
+
+            var value = $(this)
+                .val()
+            var deviceList = (views[currentView].multiSelected || []).filter(Boolean).length > 0 ? views[currentView].multiSelected : [views.selected]
+             if(deviceList.length > 2){
+            deviceList.forEach(function(deviceID) {
+                if (deviceID) {
+                    var device = main.getCurrentFloor()[currentView][deviceID]
+                    if (device._protocol !== value) {
+                        device._protocol = value
+                        $('#' + currentView)
+                            .find('.ip-input-container')
+                            .setIPVal(device._address)
+                        main.getProject()
+                            ._baseIPCurrent = device._address
+                    }
+                }
+
+            });
+            } else if(deviceList.length){
+                 var deviceID = views[currentView].selected
+                 if(deviceID !== '') {
+                     var deviceID = views[currentView].selected
+                     var device = main.getCurrentFloor()[currentView][deviceID]
+                     if (device._protocol !== value) {
+                         device._protocol = value
+                         $('#' + currentView)
+                             .find('.ip-input-container')
+                             .setIPVal(device._address)
+                         main.getProject()
+                             ._baseIPCurrent = device._address
+                     }
+                 }
+             }
+        })
+
+    $('#tabs .ip-input-container, #fixture-start-ip, #sensor-start-ip')
+        .on('input', function(event) {
+            var strIP = $(this)
+                .getIPVal()
+            var view = views[currentView]
+            var id = view.selected
+            if (id !== '') {
+                var device = main.getCurrentFloor()[currentView][id]
+                device._address = strIP
+                main.getProject()
+                    ._baseIPCurrent = strIP
+            }
+        })
+
+    // TODO-MAK: remove enocean specific selectors
+    $('.enocean-id')
+        .on('input', function(event) {
+            var value = $(this)
+                .val()
+            var view = views[currentView]
+            var deviceID = view.selected
+            if (deviceID !== '') {
+                var device = main.getCurrentFloor()[currentView][deviceID]
+                device.userData = value
+            }
+        })
+
+    // NOTE-MAK: added device-coap-identifier jQuery selector and event listener
+    $('.device-coap-identifier')
+        .on('input', function(event) {
+            var view = views[currentView]
+            var deviceID = view.selected
+            if (deviceID !== '') {
+                var device = main.getCurrentFloor()[currentView][deviceID]
+                var value = $(this).val()
+                    // TODO-MAK: define device property for coap identifier
+                device._id = value
+            }
+        })
+
+    $('#coap-identifier-fixture')
+        .on('click', function(event) {
+            // alert("dsdsd");
+            $(this).val('');
+        })
+
+    $('#coap-identifier-fixture')
+        .on('mouseleave', function(event) {
+            // alert("dsdsd");
+            if ($(this).val() == '') {
+                $(this).val('');
+            }
+        })
+
+    $('#coap-identifier-sensor')
+        .on('click', function(event) {
+            // alert("dsdsd");
+            $(this).val('');
+        })
+
+    $('#coap-identifier-sensor')
+        .on('mouseleave', function(event) {
+            // alert("dsdsd");
+            if ($(this).val() == '') {
+                $(this).val('');
+            }
+        })
+
+    $('.arrow-btn')
+        .click(function(event) {
+            var view = views[currentView]
+            var deviceIDs = Object.keys(main.getCurrentFloor()[currentView])
+            var currentIndex = deviceIDs.indexOf(view.selected)
+            if (currentIndex >= 0) {
+                var newIndex = $(this)
+                    .hasClass('arrow-next') ?
+                    (currentIndex + 1) % deviceIDs.length :
+                    (currentIndex - 1 + deviceIDs.length) % deviceIDs.length
+                view.selected = deviceIDs[newIndex]
+                updateDeviceTab()
+            } else {}
+        })
+
+    //General zone layer
+
+    //Working hours defaults
+    $('#wh-start')
+        .val('08:00');
+    $('#wh-end')
+        .val('18:00');
+
+    //User zone layer
+//  var container = $('#main')
+// var specifiedElement = document.getElementById('main');
+
+    $('#main').on('click', function(event){
+        var md = mouse.mouseDown
+        var view = views[currentView]
+        var spaceHere = findSpace(md.gridX, md.gridY) || {}
+
+        if ((event.button === 0 && event.ctrlKey || event.button === 1)) {
+            if(spaceHere.spaceID){
+                zoneContextMenu.items[1].enabled = true;
+                zoneContextMenu.items[0].enabled = true;
+            } else {
+                zoneContextMenu.items[1].enabled = false
+                zoneContextMenu.items[0].enabled = false;
+            }
+
+            event.preventDefault()
+            if(currentView == "fixtures" || currentView === "sensors") {
+                var deviceHere = findDevice(md.gridX, md.gridY)
+                selectDevice(deviceHere, true)
+            } else {
+                selectSpace(spaceHere, true)
+            }
+            selectSpace(spaceHere, true)
+        }
+    })
+
+
+    function clearSearchResult(){
+        var view = views[currentView]
+        views["fixtures"].multiSelected = []
+        views["sensors"].multiSelected = []
+        //view.selected =  view.multiSelected.length ?  view.multiSelected''
+        view.multiSelected = []
+        views["fixtures"].selected = ''
+        views["sensors"].selected = ''
+        views["user"].selected = ''
+        views["general"].selected = ''
+        views["beacon"].selected = ''
+        views["user"].multiSelected = []
+        views["beacon"].multiSelected = []
+        views["general"].multiSelected = []
+        document.getElementById("inputSearchValueBox").value = ""
+        $("#searchResultCount").html("")
+        isSearchModeEnabled = false
+
+    }
+
+
+
+    // $('.available-lightscene')
+    //     .on('change', function(event) {
+    //         var view = views[currentView]
+    //
+    //         var self = $(this)
+    //         //NOTE- Kamlesh: DT-54 Multiple Space Selection: Loop spacObj for multiple sapce
+    //         if(view.multiSelected.length > 1){
+    //             for(var i =0; i < view.multiSelected.length; i++){
+    //               var spaceObj = main.getCurrentController()
+    //                   .spaces[view.multiSelected[i]]
+    //             if (Object.keys(spaceObj.availableLightScenes).length <= 1 && self.val() === spaceObj._defaultLightScene){
+    //                 alert("Atleast one lightscene must be selected. ")
+    //                 console.log("clicked")
+    //                 self.prop('checked', true)
+    //             } else {
+    //                 // NOTE-MAK: adding back amBX code. light scene bar state fix.
+    //                 spaceObj.toggleLightScene(self.val(), self.attr('mood'))
+    //
+    //                 $('.default-lightscene')
+    //                 .val([spaceObj._defaultLightScene])
+    //                 $('.mood-container')
+    //                 .hide()
+    //               }
+    //             }
+    //         }else{
+    //           var spaceObj = main.getCurrentController()
+    //             .spaces[view.selected]
+    //             if (Object.keys(spaceObj.availableLightScenes).length <= 1 && self.val() === spaceObj._defaultLightScene){
+    //                 alert("Atleast one lightscene must be selected. ")
+    //                 self.prop('checked', true)
+    //                 console.log("called 1")
+    //             } else {
+    //                 // NOTE-MAK: adding back amBX code. light scene bar state fix.
+    //                 spaceObj.toggleLightScene(self.val(), self.attr('mood'))
+    //                 $('.default-lightscene')
+    //                 .val([spaceObj._defaultLightScene])
+    //                 console.log($('.default-lightscene').val([spaceObj._defaultLightScene]))
+    //                 console.log("called 2")
+    //                 $('.mood-container')
+    //                 .hide()
+    //               }
+    //         }
+    //
+    //     })
+
+    $('.available-ls-label')
+        .map(function(index, element) {
+            var self = $(this)
+            var lightsceneName = $('#' + self.attr('for'))
+                .val()
+            var moodMenu = $('#mood-menu')
+                .html()
+            $(moodMenu)
+                .clone(true)
+                .appendTo(self)
+                .find('input.mood')
+                .map(function(index, element) {
+                    var input = $(this)
+                    var newId = input.attr('id') + '-' + lightsceneName
+                    var newName = input.attr('name') + '-' + lightsceneName
+                    input
+                        .attr('id', newId)
+                        .attr('name', newName)
+                        .next('label')
+                        .attr('for', newId)
+                })
+            return this
+        })
+        .on('click', function(event) {
+            var input = $('#' + $(this)
+                .attr('for'))
+            if (!(input.prop('disabled'))) {
+                if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
+                    event.preventDefault()
+                    if (input.prop('checked')) {
+                        var lightscene = input.val()
+                        var tab = $('#' + currentView)
+                        var view = views[currentView]
+                        var spaceObj = main.getCurrentController()
+                            .spaces[view.selected]
+                        event.preventDefault()
+                        tab.find('input.default-lightscene')
+                            .val([lightscene])
+                        spaceObj._defaultLightScene = lightscene
+                    }
+                }
+            }
+        })
+        .on('mouseup', function(event) {
+            var input = $('#' + $(this)
+                .attr('for'))
+            if (event.button === 2 && !(input.prop('disabled'))) {
+                event.preventDefault()
+                if (input.prop('checked')) {
+                    var moodMenu = $(this)
+                        .find('.mood-container')
+                    var isMoodsHidden = moodMenu.is(':hidden')
+                    $('.mood-container')
+                        .hide()
+                    if (isMoodsHidden) {
+                        moodMenu.show()
+                    }
+                }
+            }
+        })
+        .on('change', function(event) {
+            if ($(event.target)
+                .hasClass('mood')) {
+                var view = views[currentView]
+                var spaceObj = main.getCurrentController()
+                    .spaces[view.selected]
+                var self = $(this)
+                var input = $('#' + self.attr('for'))
+                var mood = self.find('input.mood:checked')
+                    .val()
+                spaceObj.setAvailableLSMood(input.val(), mood)
+                input.attr('mood', mood)
+                $('.mood-container')
+                    .hide()
+            }
+        })
+        $('.available-ls-label-beacon')
+            .map(function(index, element) {
+                var self = $(this)
+                var lightsceneName = $('#' + self.attr('for'))
+                    .val()
+                var moodMenuBeacon = $('#mood-menu-beacon')
+                    .html()
+              $(moodMenuBeacon)
+                  .clone(true)
+                  .appendTo(self)
+                  .find('input.mood')
+                  .map(function(index, element) {
+                      var input = $(this)
+                      var newId = input.attr('id') + '-' + lightsceneName
+                      var newName = input.attr('name') + '-' + lightsceneName
+                      input
+                          .attr('id', newId)
+                          .attr('name', newName)
+                          .next('label')
+                          .attr('for', newId)
+                  })
+                return this
+            }).on('click', function(event) {
+                var input = $('#' + $(this)
+                    .attr('for'))
+                if (!(input.prop('disabled'))) {
+                    if ((event.button === 0 && event.ctrlKey) || event.button === 1) {
+                        event.preventDefault()
+                        if (input.prop('checked')) {
+                            var lightscene = input.val()
+                            var tab = $('#' + currentView)
+                            var view = views[currentView]
+                            var spaceObj = main.getCurrentController()
+                                .spaces[view.selected]
+                            event.preventDefault()
+                            tab.find('input.default-lightscene-beacon')
+                                .val([lightscene])
+                            spaceObj._defaultLightScene = lightscene
+                        }
+                    }
+                }
+            }).on('mouseup', function(event) {
+                var input = $('#' + $(this)
+                    .attr('for'))
+                if (event.button === 2 && !(input.prop('disabled'))) {
+                    event.preventDefault()
+                    if (input.prop('checked')) {
+                        var moodMenu = $(this)
+                            .find('.mood-container')
+                        var isMoodsHidden = moodMenu.is(':hidden')
+                        $('.mood-container')
+                            .hide()
+                        if (isMoodsHidden) {
+                            moodMenu.show()
+                        }
+                    }
+                }
+            }).on('change', function(event) {
+                if ($(event.target)
+                    .hasClass('mood')) {
+                    var view = views[currentView]
+                    var spaceObj = main.getCurrentController()
+                        .spaces[view.selected]
+                    var self = $(this)
+                    var input = $('#' + self.attr('for'))
+                    var mood = self.find('input.mood:checked')
+                        .val()
+                    spaceObj.setAvailableLSMood(input.val(), mood)
+                    input.attr('mood', mood)
+                    $('.mood-container')
+                        .hide()
+                }
+            })
+    // $("#color-ls").click(function(){
+    //     $(".ls-color").show();
+    // });
+
+    // $("#show").click(function(){
+    //     $("p").show();
+    // });
+    // Common zone event listeners
+    $('.zone-name')
+        .on('input', function(event) {
+            var text = $(this)
+                .val();
+            var view = views[currentView]
+            if (view.selected !== '') {
+                var space = main.getCurrentController()
+                    .spaces[view.selected]
+                space._name = text
+            }
+        })
+
+    $('input[name=general-zone-type], input[name=beacon-zone-type], input[name=user-zone-type')
+        .on('change', function(event) {
+            var view = views[currentView]
+            if (view.selected !== '') {
+                 var type = $(this).val()
+                //NOTE- Kamlesh: Multiple Selection- Creating multiple spaceObj
+                if(view.multiSelected.length > 1){
+                    for(var i = 0; i < view.multiSelected.length; i++){
+                        var spaceObj = main.getCurrentController().spaces[view.multiSelected[i]]
+                          spaceObj._type = type
+                          updateLightSceneElements(spaceObj)
+
+                    }
+                }else{
+                    var spaceObj = main.getCurrentController().spaces[view.selected]
+                        spaceObj._type = type
+                        updateLightSceneElements(spaceObj)
+                }
+
+
+            } else if (currentView === 'general') {
+                $('#ls-general-zone')
+                    .attr('lightscene', '')
+            }
+        })
+    // NOTE - Prakash : brightness has been added in schedule-event.
+    // $('.default-brightness-slider').on('input change', function(event) {
+    //     var view = views[currentView]
+    //     if (view.selected !== '') {
+    //         var value = $(this)
+    //             .val()
+    //             //NOTE- Kamlesh: Multiple Selection- Creating multiple spaceObj
+    //             if(view.multiSelected.length > 1){
+    //                 for(var i = 0; i < view.multiSelected.length; i++){
+    //                     var spaceObj = main.getCurrentController().spaces[view.multiSelected[i]]
+    //                       spaceObj._defaultBrightness = value
+    //                 }
+    //             }else{
+    //                 var spaceObj = main.getCurrentController().spaces[view.selected]
+    //                      spaceObj._defaultBrightness = value
+    //             }
+    //
+    //         $('#' + currentView)
+    //             .find('.default-brightness-value')
+    //             .text(value + '%')
+    //     }
+    // })
+
+    //Zone context menu
+    zoneContextMenu = new gui.Menu();
+        zoneContextMenu.append(new gui.MenuItem({
+        label: 'Delete zone',
+            enabled: false,
+        click: function() {
+         // zoneContextMenu.items[0].click = function() {
+            var view = views[currentView]
+         //   var scheduler = Scheduler.singleton
+            // WARN-MAK: did not require scheduleTab.js in index.js. still loading on index.html
+            // NOTE-MAK: remove all schedules belonging to this space
+            var spaceName = view.selected
+            //NOTE- Kamlesh: Multiple Selection- Creating multiple spaceObj
+            if(view.multiSelected.length > 1){
+                for(var i = 0; i<view.multiSelected.length; i++){
+                  var spaceObj = main.getCurrentController().spaces[view.multiSelected[i]]
+
+               //   scheduler.removeSchedule(spaceObj.amBXSpace)
+                  main.getProject().deleteSpace(view.multiSelected[i], main.getState()
+                    .currentControllerID)
+                }
+
+            }else{
+
+              var spaceObj = main.getCurrentController().spaces[spaceName]
+              // WARN-MAK: dynamic scheduler does not add a schedule by default
+              //           still using legacy amBX "schedule"
+           //   scheduler.removeSchedule(spaceObj.amBXSpace)
+
+              main.getProject()
+                  .deleteSpace(view.selected, main.getState()
+                      .currentControllerID)
+
+            }
+            view.multiSelected = []
+            view.selected = ''
+            zoneContextMenu.items[0].enabled = false;
+            zoneContextMenu.items[1].enabled = false;
+            zoneContextMenu.items[2].enabled = false;
+            view.selectedMap = ''
+            view.updateTab()
+
+        }
+    }))
+
+    zoneContextMenu.append(new gui.MenuItem({
+        label: 'Copy zone',
+        enabled: false,
+        click: function() {
+
+            var view = views[currentView]
+            var spaceName = view.selected
+            copiedSpace = [];
+            //NOTE- Kamlesh: Multiple Selection- Creating multiple spaceObj
+            if(view.multiSelected.length > 1){
+                for(var i = 0; i<view.multiSelected.length; i++){
+                    copiedSpace.push( main.getCurrentController().spaces[view.multiSelected[i]])
+                }
+
+            }else{
+                copiedSpace.push(main.getCurrentController().spaces[spaceName])
+            }
+            if(copiedSpace.length > 0  && currentView === 'user' ) {
+                copiedRefSpace = copiedSpace[0]
+                zoneContextMenu.items[2].enabled = true;
+            }else {
+                copiedRefSpace = null
+                zoneContextMenu.items[2].enabled = false;
+            }
+            //storeOldSpaceState(copiedSpace);
+
+        }}))
+
+    zoneContextMenu.append(new gui.MenuItem({
+        label: 'Paste zone',
+        enabled: false,
+        click: function() {
+            var view = views[currentView]
+
+            if(currentView !== 'user' ){
+                return ;
+            }
+            if(copiedRefSpace) {
+                storeOldSpaceState(copiedRefSpace);
+            }
+            // var referenceSpace = copiedSpace[0].spaceObj;
+            // selectSpace();
+            if(copiedSpace.length > 0) {
+
+                var isAnySpaceOverlapping = copiedSpace.some(function(space) {
+
+                    var map = space.maps[oldSpaceMap.mapId]
+                    var refMap = copiedRefSpace.maps[oldSpaceMap.mapId]
+                    var mX = mouse.mouseDown.gridX + (map._x - refMap._x)
+                    var mY = mouse.mouseDown.gridY + (map._y - refMap._y)
+                    var mdX= mX + map._width ;
+                    var mdY = mY + map._height;
+                    if(isSpaceOutOfGrid(mX, mdX, mY, mdY)) {
+                        alert("Spaces are going outside the grid.")
+                        return true;
+                    }
+
+
+                    if(currentView === 'user' && isCurrentSpaceOverlapping(mX, mY, mdX, mdY, space, true)) {
+                        alert("Space is going to be overlapped, Cannot create the space.")
+                        return true;
+                    }
+                    if(checkAnyDeviceAtNewAxis(space, mX -  map._x , mY -  map._y)) {
+                        alert("Devices are overlapping, Cannot create new space")
+                        return true;
+                    }
+                    return false;
+                })
+
+                if(isAnySpaceOverlapping) {
+                    return;
+                }
+
+                copiedSpace.forEach(function(space) {
+                    var map = space.maps[oldSpaceMap.mapId]
+                    var refMap = copiedRefSpace.maps[oldSpaceMap.mapId]
+                    var map = space.maps[oldSpaceMap.mapId]
+                    var mX = mouse.mouseDown.gridX + (map._x - refMap._x)
+                    var mY = mouse.mouseDown.gridY + (map._y - refMap._y)
+                    var mdX= mX + map._width ;
+                    var mdY = mY + map._height;
+                placeNewSpace(mX, mY, mdX, mdY);
+                //updateDeviceAxisOnSpaceMove(view,mX - map._x,mY - map._y);
+                //var activeFixtures = copiedSpace.activeFixtures || {};
+                //var activeSensors = copiedSpace.activeSensors || {};
+                Object.keys(space.activeFixtures || {}).forEach(function(fixtureId) {
+                    var device = main.getCurrentFloor()['fixtures'][space.activeFixtures[fixtureId]]
+                    if(device){
+                        var newX = device.gridX + (mX - map._x)
+                        var newY = device.gridY + (mY - map._y)
+                        var deviceOptions = createDeviceOption(device, newX, newY, 'fixture')
+                        var state = main.getState()
+                        var buildingID = state.currentBuildingID
+                        var floorID = state.currentFloorID
+                        var controllerID = state.currentControllerID
+                        main.getProject()
+                            .addFixture(deviceOptions, buildingID, floorID, controllerID)
+                        // placeNewDevice(newX, newY)
+                    }
+
+                })
+                Object.keys(space.activeSensors || {}).forEach(function(sensorId) {
+                    var device = main.getCurrentFloor()['sensors'][space.activeSensors[sensorId]]
+                    if(device){
+                        var newX = device.gridX + (mX - map._x)
+                        var newY = device.gridY + (mY - map._y)
+                        var state = main.getState()
+                        var buildingID = state.currentBuildingID
+                        var floorID = state.currentFloorID
+                        var controllerID = state.currentControllerID
+                        var deviceOptions = createDeviceOption(device, newX, newY)
+                        main.getProject()
+                            .addSensor(deviceOptions, buildingID, floorID, controllerID)
+                    }
+
+                });
+                });
+               //  = null;copiedSpaace
+                if(!copiedSpace.length > 0) {
+                    zoneContextMenu.items[2].enabled = false;
+                }
+
+                //placeNewDevice(gridX, gridY)
+            }
+        }}))
+    function isSpaceOutOfGrid(mX, mdX, mY, mdY) {
+        var floor = main.getCurrentFloor()
+        var gridW = floor._gridW
+        var gridH = floor._gridH
+        if((0 > mX ||  mX >= gridW) || ( 0 > mdX ||  mdX >= gridW) || (0 > mY ||  mY >= gridH) || (0 > mdY ||  mdY >= gridH)) {
+            return true;
+        }
+        return false;
+    }
+    // Init Orientation button event listener
+    $('.orientation-container')
+        .map(function(element, index) {
+            var self = $(this)
+            var template = $('#orientation-widget')
+                .html()
+            $(template)
+                .clone(true)
+                .appendTo(self)
+            return this
+        })
+        .on('change', '.input-orientation', function(event) {
+            var view = views[currentView]
+            var state = main.getState()
+            var buildingID = state.currentBuildingID
+            var floorID = state.currentFloorID
+            var controllerID = state.currentControllerID
+            var spaceID = view.selected
+            var mapID = view.selectedMap
+            if(view.multiSelected.length > 1){
+                for(var i = 0; i<view.multiSelected.length; i++){
+                    var map = main.getCurrentController()
+                        .spaces[view.multiSelected[i]].maps[mapID]
+                    var value = $(this)
+                        .val()
+                    map._orientation = parseInt(value)
+                    main.getProject()
+                        .allocateDevicesInSpace(view.multiSelected[i], mapID, buildingID, floorID,
+                            controllerID)
+
+                }
+
+            }else{
+           var spaceID = view.selected
+                if (spaceID !== '' && mapID !== '') {
+                    var map = main.getCurrentController()
+                        .spaces[spaceID].maps[mapID]
+                    var value = $(this)
+                        .val()
+                    map._orientation = parseInt(value)
+                    main.getProject()
+                        .allocateDevicesInSpace(spaceID, mapID, buildingID, floorID,
+                            controllerID)
+                }
+            }
+
+        })
+
+    // Activation settings
+
+    function toggleActivationSettings() {
+        var selector = '#activation-' + currentView
+        $("#"+currentView+"-schedule-tab").css('display','')
+        $(selector).toggle()
+    }
+    $('.activations-container')
+        .on('click', '.activation-checkbox', toggleActivationSettings)
+
+    $('.view-link')
+        .on('click', function(event) {
+            var viewVal = $(this).data('view')
+            if(viewVal == 'building'){
+              var view = views[viewVal]
+              var spaceObj = main.getCurrentController().spaces[view.selected]
+              var $building_activation_time_from = $("#building-activation-time-from"),
+                  $building_activation_time_to = $("#building-activation-time-to")
+
+              var startPickerBuilding = $building_activation_time_from.pickatime('picker'),
+                  endPickerBuilding = $building_activation_time_to.pickatime('picker')
+              var triggerTimes = main.parseTrigger(spaceObj._zoneActiveTrigger)
+                  startPickerBuilding.set('select', triggerTimes[0],  { format: 'HH:i' } )
+                  endPickerBuilding.set('select', triggerTimes[1],  { format: 'HH:i' } )
+            }
+        })
+
+  // function occupancySettingCell(spaceObj){
+  //   if (target.hasClass('activation-timeout')) {
+  //               // Input from timeout fields
+  //               var timeoutMin = parseInt(self.find('.timeout-min')
+  //                   .val(), 10) % 60
+  //               var timeoutSec = parseInt(self.find('.timeout-sec')
+  //                   .val(), 10) % 60
+  //               var timeout = timeoutMin * 60 + timeoutSec
+  //               spaceObj._timeout = timeout
+
+  //           } else if (target.hasClass('activation-fadeout')) {
+  //               // Input from fadeout fields
+  //               var fadeoutMin = parseInt(self.find('.fadeout-min')
+  //                   .val(), 10) % 60
+  //               var fadeOutSec = parseInt(self.find('.fadeout-sec')
+  //                   .val(), 10) % 60
+  //               var fadeout = fadeoutMin * 60 + fadeOutSec
+  //               spaceObj._fadeout = fadeout
+  //           } else {
+  //               // Input from behaviour select fields
+  //               var behaviour = self.find('.activation-occupancy-select')
+  //                   .val()
+  //               var timeout = spaceObj._timeout
+  //               var fadeout = spaceObj._fadeout
+  //               switch (behaviour) {
+  //                   case 'default':
+  //                       // Enable and fill timeout inputs
+  //                       self.find('.timeout-min')
+  //                           .val(Math.floor(timeout / 60))
+  //                           .prop('disabled', false)
+  //                       self.find('.timeout-sec')
+  //                           .val(timeout % 60)
+  //                           .prop('disabled', false)
+  //                           // Enable and fill fadeout inputs
+  //                       self.find('.fadeout-min')
+  //                           .val(Math.floor(fadeout / 60))
+  //                           .prop('disabled', false)
+  //                       self.find('.fadeout-sec')
+  //                           .val(fadeout % 60)
+  //                           .prop('disabled', false)
+  //                       break
+
+  //                   case 'off':
+  //                       self.find('.timeout-min')
+  //                           .prop('disabled', false)
+  //                           .val(Math.floor(timeout / 60))
+  //                       self.find('.timeout-sec')
+  //                           .prop('disabled', false)
+  //                           .val(timeout % 60)
+  //                       self.find('.activation-fadeout')
+  //                           .val('')
+  //                           .prop('disabled', true)
+  //                       break
+
+  //                   case 'stayOn':
+  //                       self.find('.activation-timeout')
+  //                           .val('')
+  //                           .prop('disabled', true)
+  //                       self.find('.activation-fadeout')
+  //                           .val('')
+  //                           .prop('disabled', true)
+  //                       break
+  //               }
+  //               spaceObj._behaviour = behaviour
+  //           }
+  // }
+
+
+    // $('.occupancy-settings-cell')
+    //     .on('change', function(event) {
+    //         var self = $(this)
+    //         var target = $(event.target)
+    //         var view = views[currentView]
+
+    //             if(view.multiSelected.length > 1){
+    //               for(var i = 0; i < view.multiSelected.length; i++){
+    //                 var spaceObj = main.getCurrentController()
+    //                 .spaces[ view.multiSelected[i]]
+    //               occupancySettingCell(spaceObj)
+
+    //               }
+
+    //             }else{
+    //               var spaceObj = main.getCurrentController()
+    //                 .spaces[view.selected]
+    //               occupancySettingCell(spaceObj)
+    //             }
+    //        // alert("index")
+
+    //     })
+    //     .map(function(index, element) {
+    //         var self = $(this)
+    //         var template = $('#activation-occupancy-settings')
+    //             .html()
+    //         $(template)
+    //             .clone(true)
+    //             .appendTo(self)
+    //     })
+   $('.occupancy-settings-cell')
+        .on('change', function(event) {
+            var self = $(this)
+            var target = $(event.target)
+            var view = views[currentView]
+            var spaceObj = main.getCurrentController()
+                .spaces[view.selected]
+            if (target.hasClass('activation-timeout')) {
+                // Input from timeout fields
+                var timeoutMin = parseInt(self.find('.timeout-min')
+                    .val(), 10) % 60
+                var timeoutSec = parseInt(self.find('.timeout-sec')
+                    .val(), 10) % 60
+                var timeout = timeoutMin * 60 + timeoutSec
+               spaceObj._timeout = timeout
+
+            } else if (target.hasClass('activation-fadeout')) {
+                // Input from fadeout fields
+                var fadeoutMin = parseInt(self.find('.fadeout-min')
+                    .val(), 10) % 60
+                var fadeOutSec = parseInt(self.find('.fadeout-sec')
+                    .val(), 10) % 60
+                var fadeout = fadeoutMin * 60 + fadeOutSec
+                spaceObj._fadeout = fadeout
+            } else {
+                // Input from behaviour select fields
+                var behaviour = self.find('.activation-occupancy-select')
+                    .val()
+               // var timeout = spaceObj._timeout
+              //  var fadeout = spaceObj._fadeout
+                switch (behaviour) {
+                    case 'default':
+                        // Enable and fill timeout inputs
+                        self.find('.timeout-min')
+                            .val(Math.floor(timeout / 60))
+                            .prop('disabled', false)
+                        self.find('.timeout-sec')
+                            .val(timeout % 60)
+                            .prop('disabled', false)
+                            // Enable and fill fadeout inputs
+                        self.find('.fadeout-min')
+                            .val(Math.floor(fadeout / 60))
+                            .prop('disabled', false)
+                        self.find('.fadeout-sec')
+                            .val(fadeout % 60)
+                            .prop('disabled', false)
+                        break
+
+                    case 'off':
+                        self.find('.timeout-min')
+                            .prop('disabled', false)
+                            .val(Math.floor(timeout / 60))
+                        self.find('.timeout-sec')
+                            .prop('disabled', false)
+                            .val(timeout % 60)
+                        self.find('.activation-fadeout')
+                            .val('')
+                            .prop('disabled', true)
+                        break
+
+                    case 'stayOn':
+                        self.find('.activation-timeout')
+                            .val('')
+                            .prop('disabled', true)
+                        self.find('.activation-fadeout')
+                            .val('')
+                            .prop('disabled', true)
+                        break
+                }
+              //  spaceObj._behaviour = behaviour
+            }
+        })
+        .map(function(index, element) {
+            var self = $(this)
+            var template = $('#activation-occupancy-settings')
+                .html()
+            $(template)
+                .clone(true)
+                .appendTo(self)
+        })
+//DT-54 Multiple Selection create spaceOjb for multiple space
+  function dhSettingCell(spaceObj){
+     var target = $(event.target)
+    if (target.hasClass('target-lux-num')) {
+       var value = target.val()
+       spaceObj._dhTargetLux = value
+   } else if (target.hasClass('dh-delta-up')) {
+       var value = target.val()
+       spaceObj._dhDeltaUp = value
+   } else if (target.hasClass('dh-delta-down')) {
+       var value = target.val()
+       spaceObj._dhDeltaDown = value
+   }
+  }
+
+    $('.dh-settings-cell')
+        .on('change', function(event) {
+            var view = views[currentView]
+
+            if(view.multiSelected.length > 1){
+              for(var i = 0; i < view.multiSelected.length; i++){
+                  var spaceObj = main.getCurrentController()
+                      .spaces[view.multiSelected[i]]
+                  dhSettingCell(spaceObj)
+              }
+
+            }else{
+              var spaceObj = main.getCurrentController()
+                .spaces[view.selected]
+              dhSettingCell(spaceObj)
+            }
+        })
+        .map(function(index, element) {
+            var self = $(this)
+            var template = $('#activation-dh-settings')
+                .html()
+            $(template)
+                .clone(true)
+                .appendTo(self)
+        })
+
+
+    // Project Settings input events
+    $('#project-settings-dialog')
+        .on('input', function(event) {
+            var target = $(event.target)
+            var type = target.attr('type')
+            if (type === 'text' && !target.hasClass('floor-name')) {
+                var value = target.val()
+                var objName = target.attr('data-object')
+                var propName = target.attr('data-propname')
+                var obj
+                switch (objName) {
+                    case 'project':
+                        obj = main.getProject()
+                        break
+                    case 'building':
+                        obj = main.getCurrentBuilding()
+                        break
+                    case 'controller':
+                        obj = main.getCurrentController()
+                        break
+                    default:
+                        obj = main.getProject()
+                        break
+                }
+                obj[propName] = value
+                if (objName === 'building' && propName === '_name') {
+                    updateHeader()
+                }
+            } else if (type === 'radio') {
+                if (target.attr('name') === 'project-status') {
+                    main.getProject()
+                        ._stage = target.val()
+                }
+            } else if (type === 'number') {
+                var parent = target.parent()
+                if (parent.hasClass('ip-input-container')) {
+                    var objName = parent.attr('data-object')
+                    var obj
+                    if (objName === 'controller') {
+                        var value = parent.getIPVal()
+                        obj = main.getCurrentController()
+                        obj._address = value
+                    }
+                }
+            }
+        })
+
+    // Default grid settings modal
+    $('#default-grid-settings-done')
+        .on('click', function(event) {
+            var modal = $('#default-grid-settings')
+            var gridWidthVal = parseInt(modal.find('.input-grid-width')
+                .val(), 10)
+            var gridHeightVal = parseInt(modal.find('.input-grid-height')
+                .val(), 10)
+            if (gridWidthVal !== NaN && gridWidthVal > 0 && gridHeightVal !== NaN && gridHeightVal > 0) {
+                var floor = main.getCurrentFloor()
+                floor._gridW = gridWidthVal
+                floor._gridH = gridHeightVal
+                renderer.loadCurrentFloor()
+                modal.hide()
+            } else {
+                alert('Please enter valid numbers for grid dimensions.')
+            }
+        })
+
+    // Hide this element
+    $('.hide-this')
+        .on('click', function(event) {
+            var parent = $(this)
+                .parent()
+            event.preventDefault()
+            parent.hide()
+        })
+
+    renderer.render();
+
+    $('.view-link')
+        .on('click', function(event) {
+            var viewVal = $(this)
+                .data('view')
+            if (viewVal !== currentView) {
+                currentView = viewVal
+                var view = views[currentView]
+                if(view.selected){
+                    zoneContextMenu.items[0].enabled = true;
+                } else {
+                    zoneContextMenu.items[0].enabled = false;
+                }
+
+                views[currentView].updateTab()
+                $('.current-view')
+                    .val([viewVal])
+                if(isSearchModeEnabled) {
+                    updateSearchresultDescriptionOnTabClick();
+                } else {
+                    $("#searchResultCount").html("")
+                }
+
+            }
+        })
+
+    $('.view-link')
+        .on('mousedown', function(event) {
+            isViewChanged = true
+        })
+
+    views[currentView].updateTab()
+
+    $(
+            '#fixture-role-ambient, #sensor-role-al, #zone-general-rr, #zone-beacon-shades, #zone-user-desk'
+        )
+        .trigger('click')
+
+    window.addEventListener('keyup', function(event) {
+        if (views[currentView].selected !==
+            '') {
+            event.preventDefault()
+            switch (currentView) {
+                case 'fixtures':
+                    fixtureKeyUp(event)
+                    break
+                case 'sensors':
+                    sensorKeyUp(event)
+                    break
+                case 'general':
+                    zoneKeyUp(event)
+                    break
+                case 'beacon':
+                    zoneKeyUp(event)
+                    break
+                case 'user':
+                    zoneKeyUp(event)
+                    break
+            }
+        }
+    })
+    window.addEventListener('mousedown', function(event) {
+        if(isSearchModeEnabled && !isViewChanged){
+            clearSearchResult()
+        } else {
+            isViewChanged =false
+        }
+        if (event.target === renderer.canvas) {
+            renderer.canvas.focus()
+            var boundingRect = renderer.canvas.getBoundingClientRect()
+            var view = views[currentView]
+            var mdGridPos
+            mouse.mouseDown.x = event.clientX - boundingRect.left
+            mouse.mouseDown.y = event.clientY - boundingRect.top
+            mdGridPos = renderer.getGridCoords(mouse.mouseDown.x, mouse.mouseDown
+                .y)
+            mouse.mouseDown.gridX = mdGridPos.x
+            mouse.mouseDown.gridY = mdGridPos.y
+            //DT- 62: Right click return false
+             if(event.which == 3){
+               return false;
+             }
+
+            if (event.button === 1 || (event.button === 0 && (!event.altKey && event.ctrlKey))) {
+
+                event.preventDefault()
+                mouse.isMiddleButtonDown = true
+            } else {
+                if (event.button === 0) {
+                    mouse.isLeftButtonDown = true
+                }
+                if (view.eventHandlers.hasOwnProperty('mousedown')) {
+                   // console.log("mousedown"+currentView)
+                    event.preventDefault()
+                    view.eventHandlers.mousedown(event)
+                }
+            }
+        } else {
+
+            mouse.mouseDown.x = -1
+            mouse.mouseDown.y = -1
+        }
+    })
+
+    window.addEventListener('mousemove', function(event) {
+        if (event.target === renderer.canvas) {
+            var boundingRect = renderer.canvas.getBoundingClientRect()
+            var view = views[currentView]
+            var gridPos
+            mouse.x = event.clientX - boundingRect.left
+            mouse.y = event.clientY - boundingRect.top
+            gridPos = renderer.getGridCoords(mouse.x, mouse.y)
+            mouse.gridX = gridPos.x
+            mouse.gridY = gridPos.y
+            if (mouse.isMiddleButtonDown) {
+                event.preventDefault()
+                renderer.pan(event.movementX, event.movementY)
+            } else {
+                if (mouse.isLeftButtonDown && !mouse.isDragging) {
+                    mouse.isDragging = true
+                }
+                if (view.eventHandlers.hasOwnProperty('mousemove')) {
+                    event.preventDefault()
+                    view.eventHandlers.mousemove(event)
+                }
+            }
+        } else {
+          //  console.log("mousemove"+currentView)
+            mouse.x = mouse.gridX = -1
+            mouse.y = mouse.gridY = -1
+        }
+    })
+
+    window.addEventListener('mouseup', function(event) {
+        if (event.target === renderer.canvas) {
+            var view = views[currentView]
+            if (view.eventHandlers.hasOwnProperty('mouseup')) {
+                event.preventDefault()
+                view.eventHandlers.mouseup(event)
+            }
+        }
+        if (event.button === 1 || (event.button === 0 && event.ctrlKey)) {
+            mouse.isMiddleButtonDown = false
+        }
+        if (event.button === 0) {
+            mouse.isLeftButtonDown = false
+            mouse.isDragging = false
+            if (mouse.isMiddleButtonDown) {
+                mouse.isMiddleButtonDown = false
+            }
+        }
+       // console.log("mouseup"+currentView)
+    })
+
+    window.addEventListener('dblclick', function(event) {
+        if (event.target === renderer.canvas) {
+            $("#searchResultCount").html("")
+            var view = views[currentView]
+            view.multiSelected = [];
+            if (view.eventHandlers.hasOwnProperty('dblclick')) {
+                event.preventDefault()
+                view.eventHandlers.dblclick(event)
+            }
+        }
+    })
+
+    window.addEventListener('wheel', function(event) {
+        if (event.target === renderer.canvas) {
+            var focusX = mouse.x
+            var focusY = mouse.y
+            var delta = event.deltaY
+            event.preventDefault()
+            renderer.zoom(focusX, focusY, delta)
+        }
+    })
+
+    window.addEventListener('contextmenu', function(event) {
+        if (event.target === renderer.canvas) {
+            var view = views[currentView]
+            if (view.eventHandlers.hasOwnProperty('contextmenu')) {
+                event.preventDefault()
+                view.eventHandlers.contextmenu(event)
+            }
+            // event.preventDefault()
+            // zoneContextMenu.popup(event.pageX, event.pageY)
+        }
+    })
+
+    window.addEventListener('resize', function(event) {
+        var mainCanvas = renderer.canvas
+        var container = $('#canvas-container')
+        var newWidth = container.width()
+        var newHeight = container.height()
+        mainCanvas.width = newWidth
+        mainCanvas.height = newHeight
+    })
+
+    function renderLoop() {
+        renderer.render();
+        requestAnimationFrame(renderLoop)
+    }
+    renderLoop();
+    var logFilePath = path.join(os.tmpdir(), 'design-tool', 'logs', 'startup.log')
+    fs.outputFile(logFilePath, (new Date()).toISOString(), function(err) {
+        win.show()
+    })
+})
